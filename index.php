@@ -6,7 +6,7 @@
  *
  * This content is released under the MIT License (MIT)
  *
- * Copyright (c) 2014 - 2019, British Columbia Institute of Technology
+ * Copyright (c) 2014 - 2017, British Columbia Institute of Technology
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,8 +29,8 @@
  * @package	CodeIgniter
  * @author	EllisLab Dev Team
  * @copyright	Copyright (c) 2008 - 2014, EllisLab, Inc. (https://ellislab.com/)
- * @copyright	Copyright (c) 2014 - 2019, British Columbia Institute of Technology (https://bcit.ca/)
- * @license	https://opensource.org/licenses/MIT	MIT License
+ * @copyright	Copyright (c) 2014 - 2017, British Columbia Institute of Technology (http://bcit.ca/)
+ * @license	http://opensource.org/licenses/MIT	MIT License
  * @link	https://codeigniter.com
  * @since	Version 1.0.0
  * @filesource
@@ -110,7 +110,7 @@ switch (ENVIRONMENT)
  * use an absolute (full) server path.
  * For more info please see the user guide:
  *
- * https://codeigniter.com/userguide3/general/managing_apps.html
+ * https://codeigniter.com/user_guide/general/managing_apps.html
  *
  * NO TRAILING SLASH!
  */
@@ -228,6 +228,55 @@ switch (ENVIRONMENT)
 
 	// Path to the system directory
 	define('BASEPATH', $system_path);
+
+
+	// thiết lập biến môi trường trong file .env, .htaccess
+	$htaccess_file = __DIR__ . '/.htaccess';
+
+	// Ưu tiên sử dụng .env.private, nếu không có thì dùng .env
+	$env_file = file_exists('.env.private') ? '.env.private' : (file_exists('.env') ? '.env' : null);
+
+	if ($env_file === null) {
+		die('File .env không tồn tại');
+	}
+
+	if (file_exists($env_file)) {
+		$lines = file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+		foreach ($lines as $line) {
+			// Bỏ qua comment
+			if (strpos(trim($line), '#') === 0) {
+				continue;
+			}
+
+			// Tách key và value
+			list($key, $value) = explode('=', $line, 2);
+			$key = trim($key);
+			$value = trim(explode('#', $value, 2)[0]); // Loại bỏ phần comment trên cùng một dòng
+
+			// Thiết lập biến môi trường
+			putenv("$key=$value");
+			$_ENV[$key] = $value; // Thêm vào $_ENV nếu cần
+
+			// Lấy biến CI_ENV từ .env
+			if ($key === 'CI_ENV') {
+				$ci_env = $value;
+			}
+		}
+	}
+
+	// Thêm dòng setENV cho .htaccess
+	if ($ci_env !== null) {
+        $htaccess_content = file_exists($htaccess_file) ? file_get_contents($htaccess_file) : '';
+
+        $setEnvLine = "SetEnv CI_ENV $ci_env";
+        if (strpos($htaccess_content, 'SetEnv CI_ENV') === false) {
+            file_put_contents($htaccess_file, "\n$setEnvLine", FILE_APPEND);
+        } else {
+            // Nếu đã tồn tại, thay thế giá trị cũ bằng giá trị mới
+            $htaccess_content = preg_replace('/SetEnv CI_ENV .*/', $setEnvLine, $htaccess_content);
+            file_put_contents($htaccess_file, $htaccess_content);
+        }
+	}
 
 	// Path to the front controller (this file) directory
 	define('FCPATH', dirname(__FILE__).DIRECTORY_SEPARATOR);

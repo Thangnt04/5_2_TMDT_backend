@@ -19,7 +19,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 |
 | Please see the user guide for complete details:
 |
-|	https://codeigniter.com/userguide3/general/routing.html
+|	https://codeigniter.com/user_guide/general/routing.html
 |
 | -------------------------------------------------------------------------
 | RESERVED ROUTES
@@ -49,6 +49,60 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | Examples:	my-controller/index	-> my_controller/index
 |		my-controller/my-method	-> my_controller/my_method
 */
-$route['default_controller'] = 'welcome';
+
+$route['dang-nhap'] = 'user/login';
+$route['dang-nhap/google'] = 'user/google_login';
+$route['dang-nhap/google/callback'] = 'user/google_callback';
+$route['dang-ky'] = 'user/register';
+$route['ban-chay'] = 'product/hot';
+$route['moi'] = 'product/news';
+$route['khuyen-mai'] = 'product/discount';
+$route['(:any)-c(:num)'] = 'product/catalog/$2';
+$route['(:any)-p(:num)'] = 'product/view/$2';
+$route['default_controller'] = 'home';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
+
+//Update
+$route['xac-thuc-mail/(:any)'] = 'validation/index/$1';
+$route['image-search'] = 'product/image_search';
+$route['text-search'] = 'product/text_search';
+$route['tim-kiem-ket-qua'] = 'product/tim_kiem_ket_qua';
+$route['quen-mat-khau'] = 'user/forgotpassword';
+$route['doi-mat-khau'] = 'user/changepassword';
+$route['verify-recaptcha'] = 'validation/verify_recaptcha';
+$route['doi-mat-khau/(:any)'] = 'validation/changepassword/$1';
+
+// Payment routes
+$route['vnpay/payment'] = 'order/payment';
+$route['vnpay/callback'] = 'order/callback';
+$route['hook/sepay-payment'] = 'order/sepay';
+
+// Shipping API routes
+$route['api/shipping2/register'] = 'api/Shipping2/register';
+$route['api/shipping2/status/(:any)'] = 'api/Shipping2/status/$1';
+$route['api/shipping2/update_status/(:any)'] = 'api/Shipping2/update_status/$1';
+$route['api/shipping2/webhook'] = 'api/Shipping2/webhook';
+$route['api/shipping2/confirm_delivery/(:any)'] = 'api/Shipping2/confirm_delivery/$1';
+
+// Webhook endpoint
+$route['api/shipping/webhook'] = 'api/Shipping/webhook';
+
+// Admin shipping routes
+$route['admin/shipping/confirm_delivery/(:any)'] = 'admin/shipping/confirm_delivery/$1';
+//update-delete-infomation-user
+$route['update-info'] = 'user/update_info';
+$route['delete-info'] = 'user/delete_info';
+
+//Read address info file
+$route['api/read-json'] = 'DiaGioiHanhChinhVN';
+
+// Check password
+$route['check-password'] = 'user/checkpassword';
+
+//shipping fee rule
+$route['shipping-fee'] = 'order/shipping_fee_rule';
+
+//Voucher
+$route['get-voucher'] = 'order/get_voucher';
+$route['check-gift-code'] = 'order/check_gift_code';
