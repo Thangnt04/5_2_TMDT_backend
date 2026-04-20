@@ -29,3 +29,5 @@ ERROR - 2026-04-20 09:17:32 --> Severity: error --> Exception: Class 'MY_Control
 ERROR - 2026-04-20 09:28:34 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
 ERROR - 2026-04-20 09:28:37 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
 ERROR - 2026-04-20 09:28:38 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
+ERROR - 2026-04-20 09:29:28 --> Severity: error --> Exception: Unable to locate the model you have specified: Slider_model /var/www/html/system/core/Loader.php 344
+ERROR - 2026-04-20 09:29:30 --> Severity: error --> Exception: Unable to locate the model you have specified: Slider_model /var/www/html/system/core/Loader.php 344
