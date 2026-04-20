@@ -26,3 +26,6 @@ ERROR - 2026-04-20 09:07:03 --> Severity: error --> Exception: Class 'MY_Control
 ERROR - 2026-04-20 09:07:03 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
 ERROR - 2026-04-20 09:07:03 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
 ERROR - 2026-04-20 09:17:32 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
+ERROR - 2026-04-20 09:28:34 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
+ERROR - 2026-04-20 09:28:37 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
+ERROR - 2026-04-20 09:28:38 --> Severity: error --> Exception: Class 'MY_Controller' not found /var/www/html/application/controllers/Home.php 4
