@@ -32,3 +32,4 @@ function send_email($to, $to_name, $subject, $body, $altBody)
         return false;
     }
 }
+
