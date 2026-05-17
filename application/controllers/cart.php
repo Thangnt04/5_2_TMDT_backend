@@ -23,14 +23,27 @@ class Cart extends MY_Controller
         $formatted_cart = [];
 
         foreach ($carts as $item) {
+            $product = $this->product_model->get_info($item->product_id);
+            $stock = $product ? max(0, (int) $product->stock) : 0;
+            $qty = (int) $item->qty;
+            if ($qty > $stock) {
+                $qty = $stock;
+                if ($stock > 0) {
+                    $this->cart_model->update_rule(
+                        ['user_id' => $user->id, 'product_id' => $item->product_id],
+                        ['qty' => $stock]
+                    );
+                }
+            }
             $formatted_cart[] = [
                 'id' => $item->product_id,
-                'qty' => $item->qty,
+                'qty' => $qty,
                 'price' => $item->price,
                 'name' => $item->name,
                 'image_link' => $item->image_link,
                 'rowid' => $item->rowid,
-                'subtotal' => $item->price * $item->qty,
+                'stock' => $stock,
+                'subtotal' => $item->price * $qty,
             ];
         }
         $this->data['carts'] = $formatted_cart;
@@ -49,6 +62,15 @@ class Cart extends MY_Controller
         $id = $this->uri->rsegment(3);
         $id = intval($id);
         $product = $this->product_model->get_product_with_discount($id);
+        if (!$product) {
+            redirect(base_url('/'));
+            return;
+        }
+        if ((int) $product->stock < 1) {
+            $this->session->set_flashdata('message', 'Sản phẩm đã hết hàng.');
+            redirect(base_url());
+            return;
+        }
         $data = array();
         $qty = 1;
         $price = $product->price;
@@ -65,8 +87,14 @@ class Cart extends MY_Controller
 
         $qty_ex = $this->cart_model->get_info_rule(['user_id' => $user->id, 'product_id' => $id], 'qty');
         if ($qty_ex) {
+            $new_qty = (int) $qty_ex->qty + 1;
+            if ($new_qty > (int) $product->stock) {
+                $this->session->set_flashdata('message', 'Chỉ còn ' . (int) $product->stock . ' sản phẩm trong kho.');
+                redirect(base_url('cart'));
+                return;
+            }
             $qty_ex = array(
-                'qty' => $qty_ex->qty + 1
+                'qty' => $new_qty
             );
             $this->cart_model->update_rule(['user_id' => $user->id, 'product_id' => $id], $qty_ex);
             redirect(base_url('cart'));
@@ -100,23 +128,23 @@ class Cart extends MY_Controller
         );
         foreach ($carts as $key => $value) {
             if ($value->product_id == $id) {
+                $product = $this->product_model->get_info($id);
+                if (!$product || (int) $qty > (int) $product->stock) {
+                    $available = $product ? (int) $product->stock : 0;
+                    exit(json_encode([
+                        'status' => 'error',
+                        'message' => 'Chỉ còn ' . $available . ' sản phẩm trong kho.',
+                    ], JSON_UNESCAPED_UNICODE));
+                }
                 $data = array();
                 $data['qty'] = $qty;
                 $data['rowid'] = md5(mt_rand(1, 1000));
                 $this->cart_model->update_rule(['user_id' => $user->id, 'product_id' => $id], $data);
-
-                // Get updated cart info
-                $updated_cart = $this->cart_model->get_list(['where' => ['user_id' => $user->id]]);
-                foreach ($updated_cart as $item) {
-                    if ($item->rowid == $data['rowid']) {
-                        $response = array(
-                            'status' => 'success',
-                            'message' => 'Cập nhật cart thành công!',
-                        );
-                        break;
-                    }
-                }
-                exit(json_encode($response, JSON_UNESCAPED_UNICODE));
+                exit(json_encode([
+                    'status' => 'success',
+                    'message' => 'Cập nhật giỏ hàng thành công!',
+                    'max_stock' => (int) $product->stock,
+                ], JSON_UNESCAPED_UNICODE));
             }
         }
 

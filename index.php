@@ -230,9 +230,7 @@ switch (ENVIRONMENT)
 	define('BASEPATH', $system_path);
 
 
-	// thiết lập biến môi trường trong file .env, .htaccess
-	$htaccess_file = __DIR__ . '/.htaccess';
-
+	// thiết lập biến môi trường trong file .env
 	// Ưu tiên sử dụng .env.private, nếu không có thì dùng .env
 	$env_file = file_exists('.env.private') ? '.env.private' : (file_exists('.env') ? '.env' : null);
 
@@ -262,20 +260,6 @@ switch (ENVIRONMENT)
 				$ci_env = $value;
 			}
 		}
-	}
-
-	// Thêm dòng setENV cho .htaccess
-	if ($ci_env !== null) {
-        $htaccess_content = file_exists($htaccess_file) ? file_get_contents($htaccess_file) : '';
-
-        $setEnvLine = "SetEnv CI_ENV $ci_env";
-        if (strpos($htaccess_content, 'SetEnv CI_ENV') === false) {
-            file_put_contents($htaccess_file, "\n$setEnvLine", FILE_APPEND);
-        } else {
-            // Nếu đã tồn tại, thay thế giá trị cũ bằng giá trị mới
-            $htaccess_content = preg_replace('/SetEnv CI_ENV .*/', $setEnvLine, $htaccess_content);
-            file_put_contents($htaccess_file, $htaccess_content);
-        }
 	}
 
 	// Path to the front controller (this file) directory

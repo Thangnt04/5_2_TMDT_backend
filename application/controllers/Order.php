@@ -15,6 +15,7 @@ class Order extends MY_Controller
 		$this->load->model('shipping_rule_model');
 		$this->load->model('coupon_model');
 		$this->load->model('user_coupon_model');
+		$this->load->model('product_model');
 	}
 
 	public function validate_email($to_mail, $to_name, $subject, $body, $altBody)
@@ -36,6 +37,19 @@ class Order extends MY_Controller
 		if (empty($carts)) {
 			redirect(base_url('/'));
 			return;
+		}
+
+		foreach ($carts as $item) {
+			$product = $this->product_model->get_info($item->product_id);
+			$stock = $product ? (int) $product->stock : 0;
+			if ((int) $item->qty > $stock) {
+				$this->session->set_flashdata(
+					'message',
+					'"' . ($product ? $product->name : 'Sản phẩm') . '" chỉ còn ' . $stock . ' trong kho. Vui lòng giảm số lượng.'
+				);
+				redirect(base_url('cart'));
+				return;
+			}
 		}
 
 		$this->data['user'] = $user;
@@ -365,11 +379,18 @@ class Order extends MY_Controller
 		);
 
 		$this->db->trans_start(); // Bắt đầu Transaction
+
+		$stock_result = $this->product_model->deduct_stock_for_items($carts);
+		if (!$stock_result['ok']) {
+			$this->db->trans_rollback();
+			return false;
+		}
+
 		$this->load->model('transaction_model');
 		$this->transaction_model->create($data_saved);
 		$transaction_id = $this->db->insert_id();
 
-		if ($formData['coupon_id'] != null) {
+		if (!empty($formData['coupon_id'])) {
 			if (!$this->user_coupon_model->mark_coupon_used($user->id, $formData['coupon_id'])) {
 				$this->db->trans_rollback();
 				echo json_encode(["status" => "error", "message" => "Lưu voucher thất bại", "errors" => "Rollback transaction"],  JSON_UNESCAPED_UNICODE);
@@ -405,9 +426,7 @@ class Order extends MY_Controller
 		$formatted_time = date('d/m/Y H:i:s', strtotime($time));
 
 		if (!$this->sending_mail($email, $total_amount, $payment, $formatted_time)) {
-			$this->db->trans_rollback();
-			echo json_encode(["status" => "error", "message" => "Gửi mail thất bại", "errors" => "Rollback transaction"], JSON_UNESCAPED_UNICODE);
-			return;
+			log_message('error', 'Gửi email xác nhận đơn hàng thất bại (VNPAY), transaction vẫn được lưu');
 		}
 
 		$this->cart_model->del_rule(['user_id' => $user->id]);
@@ -548,7 +567,8 @@ class Order extends MY_Controller
 			$data_saved = array();
 			$time = date('Y-m-d H:i:s');
 			$data_saved = array(
-				'user_id' => $user_id, // Nếu chưa đăng nhập, user_id = 0
+				'user_id' => $user_id,
+				'status' => 1,
 				'delivery_name' => $data['name'],
 				'delivery_email' => $data['email'],
 				'delivery_address' => $data['address'],
@@ -566,11 +586,22 @@ class Order extends MY_Controller
 			);
 
 			$this->db->trans_start(); // Bắt đầu Transaction
+
+			$stock_result = $this->product_model->deduct_stock_for_items($carts);
+			if (!$stock_result['ok']) {
+				$this->db->trans_rollback();
+				echo json_encode([
+					"status" => "error",
+					"message" => $stock_result['message'],
+				], JSON_UNESCAPED_UNICODE);
+				return;
+			}
+
 			$this->load->model('transaction_model');
 			$this->transaction_model->create($data_saved);
 			$transaction_id = $this->db->insert_id();
 
-			if ($data['coupon_id'] != null) {
+			if (!empty($data['coupon_id'])) {
 				if (!$this->user_coupon_model->mark_coupon_used($user->id, $data['coupon_id'])) {
 					$this->db->trans_rollback();
 					echo json_encode(["status" => "error", "message" => "Lưu voucher thất bại", "errors" => "Rollback transaction"],  JSON_UNESCAPED_UNICODE);
@@ -578,7 +609,7 @@ class Order extends MY_Controller
 				}
 			}
 
-			if ($data['giftcode_id'] != null) {
+			if (!empty($data['giftcode_id'])) {
 				if (!$this->user_coupon_model->mark_gift_code_used($user->id, $data['giftcode_id'])) {
 					$this->db->trans_rollback();
 					echo json_encode(["status" => "error", "message" => "Lưu gift code thất bại", "errors" => "Rollback transaction"],  JSON_UNESCAPED_UNICODE);
@@ -628,15 +659,21 @@ class Order extends MY_Controller
 			$formatted_time = date('d/m/Y H:i:s', strtotime($time));
 
 			if (!$this->sending_mail($email, $total_amount, $payment, $formatted_time)) {
-				$this->db->trans_rollback();
-				echo json_encode(["status" => "error", "message" => "Gửi mail thất bại", "errors" => "Rollback transaction"], JSON_UNESCAPED_UNICODE);
-				return;
+				log_message('error', 'Gửi email xác nhận đơn hàng thất bại, transaction #' . $transaction_id);
 			}
 
 			$this->cart_model->del_rule(['user_id' => $user->id]);
 
 			// Hoàn tất transaction (tự động commit nếu không có lỗi, rollback nếu có lỗi)
 			$this->db->trans_complete();
+
+			if (!$this->db->trans_status()) {
+				echo json_encode([
+					"status" => "error",
+					"message" => "Đặt hàng thất bại, vui lòng thử lại",
+				], JSON_UNESCAPED_UNICODE);
+				return;
+			}
 
 			// Trả về JSON phản hồi
 			if ($data['payment'] == 'cash') {
@@ -756,5 +793,96 @@ class Order extends MY_Controller
 	public function sepay()
 	{
 		redirect(base_url('/'));
+	}
+
+	public function geocode_address()
+	{
+		if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+			return;
+		}
+
+		header('Content-Type: application/json; charset=utf-8');
+		$this->load->helper('shipping_geo');
+
+		$user = $this->session->userdata('user');
+		if (!$user) {
+			echo json_encode([
+				'status' => 'null_user',
+				'message' => 'Người dùng không tồn tại!',
+			], JSON_UNESCAPED_UNICODE);
+			return;
+		}
+
+		$city = trim($this->input->get('city'));
+		$district = trim($this->input->get('district'));
+		$ward = trim($this->input->get('ward'));
+
+		if ($city === '' || $district === '' || $ward === '') {
+			echo json_encode([
+				'status' => 'error',
+				'message' => 'Thiếu thông tin địa chỉ',
+			], JSON_UNESCAPED_UNICODE);
+			return;
+		}
+
+		$coords = shipping_resolve_coordinates($city, $district, $ward);
+		if (!$coords) {
+			echo json_encode([
+				'status' => 'error',
+				'message' => 'Không tìm thấy tọa độ cho địa điểm này',
+			], JSON_UNESCAPED_UNICODE);
+			return;
+		}
+
+		echo json_encode([
+			'status' => 'success',
+			'longitude' => $coords[0],
+			'latitude' => $coords[1],
+		], JSON_UNESCAPED_UNICODE);
+	}
+
+	public function calculate_distance()
+	{
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+			return;
+		}
+
+		header('Content-Type: application/json; charset=utf-8');
+		$this->load->helper('shipping_geo');
+
+		$user = $this->session->userdata('user');
+		if (!$user) {
+			echo json_encode([
+				'status' => 'null_user',
+				'message' => 'Người dùng không tồn tại!',
+			], JSON_UNESCAPED_UNICODE);
+			return;
+		}
+
+		$data = json_decode(file_get_contents('php://input'), true);
+		$from = isset($data['from']) ? $data['from'] : null;
+		$to = isset($data['to']) ? $data['to'] : null;
+
+		if (
+			!is_array($from) || count($from) < 2
+			|| !is_array($to) || count($to) < 2
+		) {
+			echo json_encode([
+				'status' => 'error',
+				'message' => 'Tọa độ không hợp lệ',
+			], JSON_UNESCAPED_UNICODE);
+			return;
+		}
+
+		$result = shipping_calculate_distance(
+			array((float) $from[0], (float) $from[1]),
+			array((float) $to[0], (float) $to[1])
+		);
+
+		echo json_encode([
+			'status' => 'success',
+			'distance' => $result['distance'],
+			'duration' => $result['duration'],
+		], JSON_UNESCAPED_UNICODE);
 	}
 }

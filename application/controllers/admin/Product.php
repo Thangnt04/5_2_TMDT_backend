@@ -192,6 +192,7 @@ class Product extends MY_Controller {
 					'catalog_id' => $this->input->post('catalog_id'),
 					'price' => str_replace(',','',$price),
 					'origin_price' => str_replace(',','',$origin_price),
+					'stock' => (int)$this->input->post('stock'),
 					// 'discount' => str_replace(',','',$discount)
 					);
 				$path = './upload/product/';

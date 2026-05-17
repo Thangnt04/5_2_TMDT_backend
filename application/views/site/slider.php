@@ -11,7 +11,7 @@
 		<div class="carousel-inner" role="listbox">
 			<?php foreach ($slider as  $value) { ?>
 				<div class="item <?php if ($value->sort_order == '1') echo 'active'; ?>">
-					<a href="<?php echo $value->link; ?>"><img src="<?php echo base_url(); ?>/upload/slider/<?php echo $value->image_link; ?>" alt="..."></a>
+					<a href="<?php echo $value->link; ?>"><img src="<?php echo base_url(); ?>upload/slider/<?php echo $value->image_link; ?>" alt="..." onerror="this.style.display='none'"></a>
 					<div class="carousel-caption">
 					</div>
 				</div>

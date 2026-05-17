@@ -20,7 +20,3 @@ SetEnv CI_ENV development
     Order Allow,Deny
     Deny from all
 </Files>
-SetEnv CI_ENV development
-SetEnv CI_ENV development
-SetEnv CI_ENV development
-SetEnv CI_ENV development
