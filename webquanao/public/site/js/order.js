@@ -108,20 +108,28 @@ function renderCity(data) {
 
 // Bắt sự kiện chọn phường xã để tính tiền vận chuyển
 // Lấy toạ độ
+function removeAccents(str) {
+	if (!str) return "";
+	return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
 function matchWords(inputStr, targetStr) {
-	const inputWords = inputStr.toLowerCase().split(/\s+/);
-	const targetWords = targetStr.toLowerCase().split(/\s+/);
+	if (!targetStr) return false;
+	const inputWords = removeAccents(inputStr.toLowerCase()).split(/\s+/);
+	const targetWords = removeAccents(targetStr.toLowerCase()).split(/\s+/);
 
 	return inputWords.every((word) => targetWords.includes(word));
 }
 
 function checkMatchInList(inputStr, list) {
 	for (let i = 0; i < list.length; i++) {
-		if (matchWords(inputStr, list[i].properties.region)) {
+		let p = list[i].properties;
+		let combinedStr = (p.region || "") + " " + (p.county || "") + " " + (p.locality || "") + " " + (p.label || "");
+		if (matchWords(inputStr, combinedStr)) {
 			return list[i].geometry.coordinates; // Dừng duyệt nếu match
 		}
 	}
-	return null; // Không có phần tử nào match
+	return list.length > 0 ? list[0].geometry.coordinates : null; // Fallback lấy kết quả tốt nhất
 }
 
 function getLastTwoWords(str) {
@@ -129,35 +137,36 @@ function getLastTwoWords(str) {
 	return words.slice(-2).join(" ");
 }
 
-async function getCoordinates(city, district, ward) {
-	const el = document.getElementById("openroute");
-	const apiKey = el.getAttribute("data-key");
-	const location = `${ward}, ${district}, ${city}, Vietnam`;
+function getShippingApiBaseUrl() {
+	const el = document.getElementById("shippingApi");
+	return el ? el.getAttribute("data-base-url").replace(/\/$/, "") : "";
+}
 
-	const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(
-		location
-	)}`;
+async function getCoordinates(city, district, ward) {
+	const params = new URLSearchParams({ city, district, ward });
 
 	try {
-		const response = await fetch(url);
-		const data = await response.json();
-		let coordinates = null;
-		if (data.features && data.features.length > 0) {
-			coordinates = checkMatchInList(getLastTwoWords(city), data.features);
-			let longitude;
-			let latitude;
-			if (coordinates != null) {
-				longitude = coordinates[0]; // Kinh độ
-				latitude = coordinates[1]; // Vĩ độ
-			} else {
-				return false;
+		const response = await fetch(
+			`${getShippingApiBaseUrl()}/order/geocode?${params.toString()}`,
+			{
+				method: "GET",
+				credentials: "same-origin",
 			}
-			return { longitude, latitude };
-		} else {
-			throw new Error("Không tìm thấy tọa độ cho địa điểm này.");
+		);
+		const data = await response.json();
+
+		if (data.status === "success") {
+			return {
+				longitude: data.longitude,
+				latitude: data.latitude,
+			};
 		}
+
+		console.error("Không lấy được tọa độ:", data.message || data);
+		return false;
 	} catch (error) {
 		console.error("Lỗi khi lấy tọa độ:", error);
+		return false;
 	}
 }
 
@@ -226,34 +235,28 @@ function resetVoucherGiftcode() {
 }
 
 async function getDistance(fromCoords, toCoords) {
-	const url = "https://api.openrouteservice.org/v2/directions/driving-car";
-	const el = document.getElementById("openroute");
-	const apiKey = el.getAttribute("data-key");
-	const body = {
-		coordinates: [fromCoords, toCoords],
-	};
-
-	const response = await fetch(url, {
+	const response = await fetch(`${getShippingApiBaseUrl()}/order/distance`, {
 		method: "POST",
+		credentials: "same-origin",
 		headers: {
-			Authorization: apiKey,
 			"Content-Type": "application/json",
 		},
-		body: JSON.stringify(body),
+		body: JSON.stringify({
+			from: fromCoords,
+			to: toCoords,
+		}),
 	});
 
 	const data = await response.json();
-	if (data.routes && data.routes.length > 0) {
-		const distance = data.routes[0].summary.distance; // đơn vị: mét
-		const duration = data.routes[0].summary.duration; // đơn vị: giây
-		return { distance, duration };
-	} else if (data.error.message != null) {
-		const distance = haversine(fromCoords, toCoords); // đơn vị: mét
-		const duration = undefined; // đơn vị: giây
-		return { distance, duration };
-	} else {
-		throw new Error("Không thể tính khoảng cách.");
+	if (data.status === "success") {
+		return {
+			distance: data.distance,
+			duration: data.duration,
+		};
 	}
+
+	const distance = haversine(fromCoords, toCoords);
+	return { distance, duration: undefined };
 }
 
 // đổi đơn vị tiền
@@ -338,7 +341,7 @@ wards.addEventListener("change", function () {
 
 async function getShippingFee(distance, totalAmount) {
 	try {
-		const response = await fetch("http://localhost:8080/shipping-fee", {
+		const response = await fetch(`${getShippingApiBaseUrl()}/shipping-fee`, {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
@@ -356,7 +359,21 @@ async function getShippingFee(distance, totalAmount) {
 		const rules = data.data;
 		let selectedRule = null;
 
+		const freeRule = rules.find(
+			(rule) =>
+				parseFloat(rule.shipping_fee) === 0 &&
+				rule.min_order_amount != null &&
+				totalAmount >= parseFloat(rule.min_order_amount)
+		);
+		if (freeRule) {
+			return 0;
+		}
+
 		for (const rule of rules) {
+			if (parseFloat(rule.shipping_fee) === 0 && rule.min_order_amount != null) {
+				continue;
+			}
+
 			const minDist = parseFloat(rule.min_distance_km);
 			const maxDist = parseFloat(rule.max_distance_km);
 			const minAmount = parseFloat(rule.min_order_amount);
@@ -591,17 +608,22 @@ document.addEventListener("DOMContentLoaded", function () {
 				selectedPayment.value == "vietqr" ||
 				selectedPayment.value == "pos"
 			) {
-				// Gửi dữ liệu lên server qua fetch API (Fake API endpoint)
-				fetch("http://localhost:8080/order/complete", {
+				fetch(`${getShippingApiBaseUrl()}/order/complete`, {
 					method: "POST",
+					credentials: "same-origin",
 					headers: {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify(formData),
 				})
-					.then((response) => response.text())
-					.then((text) => {
-						return JSON.parse(text); // Chuyển thành JSON thủ công
+					.then(async (response) => {
+						const text = await response.text();
+						try {
+							return JSON.parse(text);
+						} catch (e) {
+							console.error("Phản hồi không hợp lệ:", text);
+							throw new Error("Máy chủ trả về dữ liệu không hợp lệ");
+						}
 					})
 					.then((data) => {
 						// Hiển thị popup đặt hàng thành công
@@ -638,12 +660,14 @@ document.addEventListener("DOMContentLoaded", function () {
 							customClass: {
 								confirmButton: "my-custom-button",
 							},
-							text: "Đã có lỗi xảy ra, vui lòng thử lại.",
+							text:
+								error.message ||
+								"Đã có lỗi xảy ra, vui lòng thử lại.",
 						});
 						console.error(error);
 					});
 			} else if (selectedPayment.value == "vnpay") {
-				fetch("http://localhost:8080/vnpay/payment", {
+				fetch(`${getShippingApiBaseUrl()}/vnpay/payment`, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(formData),

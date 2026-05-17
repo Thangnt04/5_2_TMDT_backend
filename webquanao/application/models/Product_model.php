@@ -178,5 +178,52 @@ class Product_model extends MY_Model {
 	
 		return $results;
 	}
+
+	/**
+	 * Trừ tồn kho nếu đủ hàng (cập nhật nguyên tử: stock >= qty).
+	 */
+	public function deduct_stock_atomic($product_id, $qty)
+	{
+		$product_id = (int) $product_id;
+		$qty = (int) $qty;
+		if ($product_id <= 0 || $qty <= 0) {
+			return false;
+		}
+
+		$this->db->set('stock', 'stock - ' . $qty, false);
+		$this->db->where('id', $product_id);
+		$this->db->where('stock >=', $qty);
+		$this->db->update($this->table);
+
+		return $this->db->affected_rows() > 0;
+	}
+
+	/**
+	 * Trừ tồn kho cho danh sách dòng giỏ/đơn.
+	 * @return array ['ok' => bool, 'message' => string]
+	 */
+	public function deduct_stock_for_items($items)
+	{
+		foreach ($items as $item) {
+			$product_id = (int) $item->product_id;
+			$qty = (int) $item->qty;
+			if (!$this->deduct_stock_atomic($product_id, $qty)) {
+				$product = $this->get_info($product_id);
+				$name = $product ? $product->name : 'Sản phẩm';
+				$available = $product ? max(0, (int) $product->stock) : 0;
+				return [
+					'ok' => false,
+					'message' => sprintf(
+						'"%s" chỉ còn %d sản phẩm trong kho (bạn đặt %d).',
+						$name,
+						$available,
+						$qty
+					),
+				];
+			}
+		}
+
+		return ['ok' => true, 'message' => ''];
+	}
 }
 

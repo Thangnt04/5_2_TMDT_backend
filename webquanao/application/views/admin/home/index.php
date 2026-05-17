@@ -122,12 +122,10 @@
 				<!-- 🔼 Thêm thống kê 7 ngày qua -->
 				<h3>📊 Thống kê lưu lượng truy cập trong 7 ngày qua:</h3>
 				<ul class="stats-list">
-					<li><strong>Người dùng đang hoạt động:</strong> <?= $data['activeUsers'] ?? 'N/A' ?></li>
-					<li><strong>Người dùng mới:</strong> <?= $data['newUsers'] ?? 'N/A' ?></li>
-					<li><strong>Số phiên truy cập:</strong> <?= $data['sessions'] ?? 'N/A' ?></li>
-					<li><strong>Phiên có tương tác:</strong> <?= $data['engagedSessions'] ?? 'N/A' ?></li>
-					<li><strong>Tỷ lệ thoát:</strong> <?= isset($data['bounceRate']) ? number_format($data['bounceRate'], 2) . '%' : 'N/A' ?></li>
-					<li><strong>Thời lượng trung bình mỗi phiên:</strong> <?= isset($data['averageSessionDuration']) ? round($data['averageSessionDuration'], 2) . 's' : 'N/A' ?></li>
+					<li><strong>Khách đặt hàng (7 ngày):</strong> <?= isset($data['activeUsers']) ? number_format($data['activeUsers']) : 'N/A' ?></li>
+					<li><strong>Khách hàng mới đăng ký:</strong> <?= isset($data['newUsers']) ? number_format($data['newUsers']) : 'N/A' ?></li>
+					<li><strong>Số đơn hàng:</strong> <?= isset($data['sessions']) ? number_format($data['sessions']) : 'N/A' ?></li>
+					<li><strong>Đơn đã xác nhận:</strong> <?= isset($data['engagedSessions']) ? number_format($data['engagedSessions']) : 'N/A' ?></li>
 				</ul>
 
 				<!-- 🔽 Biểu đồ + legend -->
@@ -136,8 +134,8 @@
 
 					<!-- Legend -->
 					<div id="chart-legend" class="chart-legend" style="margin-top: 10px;">
-						<span style="color: rgba(220,220,220,1); font-size: 18px;">■</span> Tổng người dùng trong tháng &nbsp;&nbsp;
-						<span style="color: rgba(48, 164, 255, 1); font-size: 18px;">■</span> Người dùng mới trong tháng
+						<span style="color: rgba(220,220,220,1); font-size: 18px;">■</span> Số đơn hàng mỗi ngày &nbsp;&nbsp;
+						<span style="color: rgba(48, 164, 255, 1); font-size: 18px;">■</span> Khách đăng ký mới mỗi ngày
 					</div>
 				</div>
 
@@ -148,9 +146,12 @@
 
 <div id="userStats"
 	data-info='<?= json_encode([
+					"labels" => $chartSeries["labels"] ?? [],
+					"dailyOrders" => $chartSeries["dailyOrders"] ?? [],
+					"dailyNewUsers" => $chartSeries["dailyNewUsers"] ?? [],
 					"totalUsers" => $dataMonth["totalUsers"] ?? 0,
 					"newUsers" => $dataMonth["newUsers"] ?? 0
-				]) ?>'>
+				], JSON_UNESCAPED_UNICODE) ?>'>
 </div>
 
 <!-- Thống kê sản phẩm -->

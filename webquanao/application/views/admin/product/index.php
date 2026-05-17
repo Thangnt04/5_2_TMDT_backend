@@ -60,6 +60,7 @@
 									<th>Tên sản phẩm</th>
 									<th>Danh mục</th>
 									<th>Giá</th>		
+									<th>Tồn kho</th>
 									<th>Hành động</th>
 								</tr>
 							</thead>
@@ -81,6 +82,13 @@
 												<?php }else{ ?>
 													<strong><?php echo number_format($value->origin_price); ?> VNĐ</strong>
 												<?php } ?>
+										</td>
+										<td style="vertical-align: middle">
+											<?php if ($value->stock > 0): ?>
+												<span class="label label-success"><?php echo $value->stock; ?></span>
+											<?php else: ?>
+												<span class="label label-danger">Hết hàng</span>
+											<?php endif; ?>
 										</td>
 										<td class="list_td aligncenter">
 								            <a href="<?php echo admin_url('product/edit/'.$value->id); ?>" title="Sửa"><span class="glyphicon glyphicon-edit"></span></a>&nbsp;&nbsp;&nbsp;

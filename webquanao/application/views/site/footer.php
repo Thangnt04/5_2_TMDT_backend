@@ -42,9 +42,8 @@
 		<div class="col-xs-12 col-sm-8 col-md-8 col-lg-8">
 			<address>
 				<strong> SHOP quần áo mini</strong><br>
-				<span class="glyphicon glyphicon-home" aria-hidden="true"></span> Địa chỉ: Kỳ Sơn - Thủy Nguyên - Hải Phòng<br>
-				<span class="glyphicon glyphicon-phone" aria-hidden="true"></span> Điện thoại: 01215345336<br>
-				Copyright ©2017 - Design by ---
+				<span class="glyphicon glyphicon-home" aria-hidden="true"></span> Địa chỉ: 120 Phường Yên Lãng, Thịnh Quang, Đống Đa, Hà Nội<br>
+				<span class="glyphicon glyphicon-phone" aria-hidden="true"></span> Điện thoại: 0123456789
 			</address>
 		</div>
 		<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4 text-right">

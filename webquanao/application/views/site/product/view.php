@@ -132,6 +132,7 @@
 																																			?>
 					<p>Số lượt xem: <?php echo $product->view; ?></p>
 					<p>Số lượt đã mua: <?php echo $product->buyed; ?></p>
+				<p>Tồn kho: <strong><?php echo $product->stock > 0 ? $product->stock . ' sản phẩm' : '<span style="color:red">Hết hàng</span>'; ?></strong></p>
 					<p> Đánh giá &nbsp;
 						<?php 
 							$raty_tb = ($product->rate_count > 0) ? ($product->rate_total / $product->rate_count) : 0;
@@ -153,7 +154,11 @@
 						});
 					</script>
 
-					<a href="<?php echo base_url('cart/add/' . $product->id); ?>" class="btn btn-info"> Thêm vào giỏ hàng</a>
+					<?php if ((int) $product->stock > 0) { ?>
+					<a href="<?php echo base_url('cart/add/' . $product->id); ?>" class="btn btn-info">Thêm vào giỏ hàng</a>
+					<?php } else { ?>
+					<button type="button" class="btn btn-default" disabled>Hết hàng</button>
+					<?php } ?>
 
 				</div>
 				<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 text-center">

@@ -5,30 +5,16 @@
         </a>
     </div>
     <div class="col-xs-12 col-sm-6 col-md-6 col-lg-6 clearpadding text-center search-container">
-        <div class="row">
-            <!-- Form tìm kiếm bằng text -->
-            <div class="col-xs-9 col-sm-9 col-md-9 col-lg-9">
-                <form action="<?php echo base_url('text-search'); ?>" method="POST" class="navbar-form">
-                    <div class="input-group" style="width: 100%;">
-                        <input type="text" name="key" class="form-control search-input" placeholder="Tìm kiếm sản phẩm..." required>
-                        <span class="input-group-btn">
-                            <button type="submit" class="btn btn-primary">
-                                <span class="glyphicon glyphicon-search"></span>
-                            </button>
-                        </span>
-                    </div>
-                </form>
-            </div>
-            <!-- Nút tìm kiếm bằng hình ảnh -->
-            <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
+        <form action="<?php echo base_url('text-search'); ?>" method="POST" class="navbar-form">
+            <div class="input-group" style="width: 100%;">
+                <input type="text" name="key" class="form-control search-input" placeholder="Tìm kiếm sản phẩm..." required>
                 <span class="input-group-btn">
-                    <label for="image-upload" class="btn btn-secondary" id="image-search-button" style="width: 100%; margin-top: 8px; margin-left: -20px;">
-                        <span class="glyphicon glyphicon-camera"></span>
-                    </label>
-                    <input type="file" id="image-upload" name="image" accept="image/*" style="display: none;">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="glyphicon glyphicon-search"></span>
+                    </button>
                 </span>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 <div class="row">
@@ -92,41 +78,5 @@
             </nav>
         </div>
 
-        <script>
-            var imageUploadElement = document.getElementById('image-upload');
-            if (imageUploadElement) {
-                imageUploadElement.addEventListener('change', function() {
-                    // Thay đổi giao diện nút thành dấu ba chấm nhấp nháy
-                    var searchButton = document.getElementById('image-search-button');
-                    searchButton.innerHTML = '<div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>';
 
-                    var formData = new FormData();
-                    formData.append('image', this.files[0]);
-
-                    fetch('<?php echo base_url("image-search"); ?>', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            // Khôi phục lại giao diện nút sau khi xử lý xong
-                            searchButton.innerHTML = '<span class="glyphicon glyphicon-camera"></span>';
-
-                            if (data.success) {
-                                sessionStorage.setItem('product_list', JSON.stringify(data.product_list));
-                                window.location.href = '<?php echo base_url("tim-kiem-ket-qua"); ?>';
-                            } else {
-                                alert(data.message || 'Tìm kiếm không thành công!');
-                            }
-                        })
-                        .catch(error => {
-                            // Khôi phục lại giao diện nút nếu có lỗi
-                            searchButton.innerHTML = '<span class="glyphicon glyphicon-camera"></span>';
-
-                            console.error('Lỗi:', error);
-                            alert('Đã xảy ra lỗi trong quá trình tìm kiếm. Vui lòng thử lại sau!');
-                        });
-                });
-            }
-        </script>
 </div>

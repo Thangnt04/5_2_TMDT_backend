@@ -53,6 +53,9 @@ $product_categories = [
                                     <span class="glyphicon glyphicon-eye-open"></span> <?php echo $value->view; ?>
                                     <span class="glyphicon glyphicon-shopping-cart"></span> <?php echo $value->buyed; ?>
                                 </p>
+                                <p>
+                                    <span class="glyphicon glyphicon-tag"></span> Tồn kho: <strong><?php echo $value->stock > 0 ? $value->stock . ' sản phẩm' : '<span style="color:red">Hết hàng</span>'; ?></strong>
+                                </p>
                                 <a href="<?php echo base_url('cart/add/'.$value->id); ?>">
                                     <button class='btn btn-info'><span class="glyphicon glyphicon-shopping-cart"></span> Thêm giỏ hàng</button>
                                 </a>

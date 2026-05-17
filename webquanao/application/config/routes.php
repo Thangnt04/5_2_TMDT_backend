@@ -102,6 +102,8 @@ $route['check-password'] = 'user/checkpassword';
 
 //shipping fee rule
 $route['shipping-fee'] = 'order/shipping_fee_rule';
+$route['order/geocode'] = 'order/geocode_address';
+$route['order/distance'] = 'order/calculate_distance';
 
 //Voucher
 $route['get-voucher'] = 'order/get_voucher';

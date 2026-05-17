@@ -386,8 +386,8 @@
 </div>
 <div id="userInfo" style="display:none;" data-user='<?php echo json_encode($user); ?>'>
 	<div id="cartInfo" style="display:none;" data-cart='<?php echo json_encode($carts_info); ?>'>
-		<div id="openroute" data-key='<?php echo getenv('OPENROUTE_SERVICE'); ?>' style="display: none;"></div>
+		<div id="shippingApi" data-base-url="<?php echo base_url(); ?>" style="display: none;"></div>
 
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"> </script>
 
-		<script src="<?php echo public_url('site/'); ?>js/order.js"></script>
+		<script src="<?php echo public_url('site/'); ?>js/order.js?v=<?php echo time(); ?>"></script>

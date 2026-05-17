@@ -30,46 +30,41 @@ function getPrevious7Months() {
 }
 
 const el = document.getElementById('userStats');
-const info = JSON.parse(el.dataset.info);
+const info = el ? JSON.parse(el.dataset.info) : {};
+
+const chartLabels =
+	info.labels && info.labels.length ? info.labels : getPrevious7Months();
+const chartOrders =
+	info.dailyOrders && info.dailyOrders.length
+		? info.dailyOrders.map((v) => parseInt(v, 10) || 0)
+		: [0, 0, 0, 0, 0, 0, parseInt(info.totalUsers, 10) || 0];
+const chartNewUsers =
+	info.dailyNewUsers && info.dailyNewUsers.length
+		? info.dailyNewUsers.map((v) => parseInt(v, 10) || 0)
+		: [0, 0, 0, 0, 0, 0, parseInt(info.newUsers, 10) || 0];
 
 var lineChartData = {
-	labels: getPrevious7Months(),
+	labels: chartLabels,
 	datasets: [
 		{
-			label: "My First dataset",
+			label: "Đơn hàng",
 			fillColor: "rgba(220,220,220,0.2)",
 			strokeColor: "rgba(220,220,220,1)",
 			pointColor: "rgba(220,220,220,1)",
 			pointStrokeColor: "#fff",
 			pointHighlightFill: "#fff",
 			pointHighlightStroke: "rgba(220,220,220,1)",
-			data: [
-				randomScalingFactor(),
-				randomScalingFactor(),
-				randomScalingFactor(),
-				randomScalingFactor(),
-				randomScalingFactor(),
-				randomScalingFactor(),
-				parseInt(info.totalUsers, 10),
-			],
+			data: chartOrders,
 		},
 		{
-			label: "My Second dataset",
+			label: "Khách mới",
 			fillColor: "rgba(48, 164, 255, 0.2)",
 			strokeColor: "rgba(48, 164, 255, 1)",
 			pointColor: "rgba(48, 164, 255, 1)",
 			pointStrokeColor: "#fff",
 			pointHighlightFill: "#fff",
 			pointHighlightStroke: "rgba(48, 164, 255, 1)",
-			data: [
-				randomScalingFactor(),
-				randomScalingFactor(),
-				randomScalingFactor(),
-				randomScalingFactor(),
-				randomScalingFactor(),
-				randomScalingFactor(),
-				parseInt(info.newUsers, 10),
-			],
+			data: chartNewUsers,
 		},
 	],
 };
@@ -165,18 +160,32 @@ var doughnutData = [
 ];
 
 window.onload = function () {
-	var chart1 = document.getElementById("line-chart").getContext("2d");
-	window.myLine = new Chart(chart1).Line(lineChartData, {
-		responsive: true,
-	});
-	var chart2 = document.getElementById("bar-chart").getContext("2d");
-	window.myBar = new Chart(chart2).Bar(barChartData, {
-		responsive: true,
-	});
-	var chart3 = document.getElementById("doughnut-chart").getContext("2d");
-	window.myDoughnut = new Chart(chart3).Doughnut(doughnutData, {
-		responsive: true,
-	});
-	var chart4 = document.getElementById("pie-chart").getContext("2d");
-	window.myPie = new Chart(chart4).Pie(pieData, { responsive: true });
+	var lineChartEl = document.getElementById("line-chart");
+	if (lineChartEl) {
+		window.myLine = new Chart(lineChartEl.getContext("2d")).Line(lineChartData, {
+			responsive: true,
+		});
+	}
+
+	var barChartEl = document.getElementById("bar-chart");
+	if (barChartEl) {
+		window.myBar = new Chart(barChartEl.getContext("2d")).Bar(barChartData, {
+			responsive: true,
+		});
+	}
+
+	var doughnutChartEl = document.getElementById("doughnut-chart");
+	if (doughnutChartEl) {
+		window.myDoughnut = new Chart(doughnutChartEl.getContext("2d")).Doughnut(
+			doughnutData,
+			{ responsive: true }
+		);
+	}
+
+	var pieChartEl = document.getElementById("pie-chart");
+	if (pieChartEl) {
+		window.myPie = new Chart(pieChartEl.getContext("2d")).Pie(pieData, {
+			responsive: true,
+		});
+	}
 };

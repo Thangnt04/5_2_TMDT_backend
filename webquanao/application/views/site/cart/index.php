@@ -28,14 +28,15 @@
 							$total_price = 0;
 							foreach ($carts as $items) {
 								$total_price = $total_price + $items['subtotal']; ?>
-								<tr>
+								<tr data-max-stock="<?php echo (int) $items['stock']; ?>">
 									<td><?php echo $i = $i + 1 ?></td>
-									<td><?php echo $items['name']; ?></td>
+									<td><?php echo $items['name']; ?><?php if ($items['stock'] < 1) { ?> <span class="text-danger">(Hết hàng)</span><?php } ?></td>
 									<td><img src="<?php echo base_url('upload/product/' . $items['image_link']); ?>" class="img-thumbnail" alt="" style="width: 50px;"></td>
 									<td>
-										<button class="cart-sub" data-id="<?php echo $items['id']; ?>">-</button>
-										<input type="text" class="qty-input" value="<?php echo $items['qty']; ?>" style="width: 30px;text-align: center;" readonly>
-										<button class="cart-sum" data-id="<?php echo $items['id']; ?>">+</button>
+										<button type="button" class="cart-sub" data-id="<?php echo $items['id']; ?>">-</button>
+										<input type="text" class="qty-input" value="<?php echo $items['qty']; ?>" data-max="<?php echo (int) $items['stock']; ?>" style="width: 30px;text-align: center;" readonly>
+										<button type="button" class="cart-sum" data-id="<?php echo $items['id']; ?>" <?php echo ($items['qty'] >= $items['stock']) ? 'disabled' : ''; ?>>+</button>
+										<small class="text-muted stock-hint">/ <?php echo (int) $items['stock']; ?></small>
 									</td>
 									<td><?php echo number_format($items['subtotal']); ?> VNĐ</td>
 									<td><a class="del-item" href="#" data-id="<?php echo $items['id']; ?>"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></a></td>
@@ -50,7 +51,21 @@
 							</tr>
 							<tr>
 								<td colspan="6">
+									<?php
+									$can_order = true;
+									foreach ($carts as $row) {
+										if ($row['stock'] < 1 || $row['qty'] > $row['stock']) {
+											$can_order = false;
+											break;
+										}
+									}
+									?>
+									<?php if ($can_order) { ?>
 									<a onclick="checkLoginBeforeOrder()" class="btn btn-success" style="cursor:pointer">Đặt mua</a>
+									<?php } else { ?>
+									<button type="button" class="btn btn-default" disabled title="Giảm số lượng hoặc xóa sản phẩm hết hàng">Đặt mua</button>
+									<span class="text-danger"> Một số sản phẩm vượt tồn kho hoặc đã hết hàng.</span>
+									<?php } ?>
 								</td>
 							</tr>
 						</tbody>
@@ -233,22 +248,42 @@
 
 				var id = this.getAttribute("data-id");
 				var action = this.classList.contains("cart-sum") ? "sum" : "sub";
-				if (action == "sub" && (parseInt(qtyInput.value) - 1 < 1)) {
+				var maxStock = parseInt(row.getAttribute("data-max-stock"), 10) || 0;
+				var currentQty = parseInt(qtyInput.value, 10) || 1;
+
+				if (action == "sub" && (currentQty - 1 < 1)) {
 					return;
 				}
 
 				if (action == "sum") {
-					qtyInput.value = parseInt(qtyInput.value) + 1;
+					if (maxStock < 1) {
+						alert("Sản phẩm đã hết hàng.");
+						return;
+					}
+					if (currentQty >= maxStock) {
+						alert("Chỉ còn " + maxStock + " sản phẩm trong kho.");
+						return;
+					}
+				}
+
+				if (action == "sum") {
+					qtyInput.value = currentQty + 1;
 					current_price = current_price + unit_price;
 					subtotalTd.textContent = current_price.toLocaleString() + " VNĐ";
 					totalItems += 1;
 					document.querySelector('.title-bar').innerHTML = 'GIỎ HÀNG ( ' + totalItems + ' sản phẩm )';
 				} else if (action == "sub") {
-					qtyInput.value = parseInt(qtyInput.value) - 1;
+					qtyInput.value = currentQty - 1;
 					current_price = current_price - unit_price;
 					subtotalTd.textContent = current_price.toLocaleString() + " VNĐ";
 					totalItems -= 1;
 					document.querySelector('.title-bar').innerHTML = 'GIỎ HÀNG ( ' + totalItems + ' sản phẩm )';
+				}
+
+				var sumBtn = row.querySelector(".cart-sum");
+				var newQty = parseInt(qtyInput.value, 10);
+				if (sumBtn) {
+					sumBtn.disabled = (newQty >= maxStock);
 				}
 
 				let totalPrice = 0;
@@ -279,9 +314,19 @@
 					})
 					.then(response => response.text()) // Đọc response dưới dạng text trước
 					.then(text => {
-						let data = JSON.parse(text); // Thử parse JSON
+						let data = JSON.parse(text);
 						if (data.status === "success") {
 							allow = true;
+							if (typeof data.max_stock !== "undefined") {
+								row.setAttribute("data-max-stock", data.max_stock);
+								qtyInput.setAttribute("data-max", data.max_stock);
+								if (sumBtn) {
+									sumBtn.disabled = (parseInt(qtyInput.value, 10) >= parseInt(data.max_stock, 10));
+								}
+							}
+						} else {
+							alert(data.message || "Không thể cập nhật số lượng.");
+							location.reload();
 						}
 					})
 					.catch(error => {
@@ -301,6 +346,10 @@
 		padding: 2px 8px;
 		margin: 0 3px;
 		cursor: pointer;
+	}
+	.cart-sum:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
 	}
 </style>
 
@@ -333,3 +382,7 @@
 		<?php endif; ?>
 	}
 </script>
+</script>
+
+
+

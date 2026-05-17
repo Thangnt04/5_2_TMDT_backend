@@ -130,13 +130,20 @@ class Home extends MY_Controller
 		$most_carted = $this->db->get()->result();
 		$this->data['most_carted'] = $most_carted;
 
-		// Thống kê lưu lượng truy cập GA4 (không làm hỏng trang nếu thiếu key)
+		$dataWeek = $this->get_local_traffic_stats();
+		$dataMonth = $this->get_local_month_stats();
+		$chartSeries = $this->get_local_chart_series();
+
 		$KEY_FILE_PATH = APPPATH . 'third_party/ga4-key.json';
-		$property_id = '492315679';
-		$dataWeek = array();
-		$dataMonth = array();
+		$property_id = getenv('GA4_PROPERTY');
+		if (empty($property_id) || strtoupper(trim($property_id)) === 'YOUR_KEY') {
+			$property_id = '492315679';
+		}
 
 		try {
+			if (!file_exists(FCPATH . 'vendor/autoload.php')) {
+				throw new RuntimeException('Composer vendor chưa được cài đặt');
+			}
 			if (!file_exists($KEY_FILE_PATH) || !is_readable($KEY_FILE_PATH)) {
 				throw new RuntimeException('Missing or unreadable GA4 key file: ' . $KEY_FILE_PATH);
 			}
@@ -156,17 +163,18 @@ class Home extends MY_Controller
 					new Metric(['name' => 'sessions']),
 					new Metric(['name' => 'newUsers']),
 					new Metric(['name' => 'engagedSessions']),
-					new Metric(['name' => 'bounceRate']),
-					new Metric(['name' => 'averageSessionDuration']),
 				]
 			]);
 
-			$dataWeek = array();
+			$gaWeek = array();
 			foreach ($responseWeek->getRows() as $row) {
 				foreach ($row->getMetricValues() as $i => $metric) {
 					$name = $responseWeek->getMetricHeaders()[$i]->getName();
-					$dataWeek[$name] = $metric->getValue();
+					$gaWeek[$name] = $metric->getValue();
 				}
+			}
+			if (!empty($gaWeek)) {
+				$dataWeek = $gaWeek;
 			}
 
 			// ===================== NGƯỜI DÙNG TRONG THÁNG HIỆN TẠI =====================
@@ -184,12 +192,15 @@ class Home extends MY_Controller
 				]
 			]);
 
-			$dataMonth = array();
+			$gaMonth = array();
 			foreach ($responseMonth->getRows() as $row) {
 				foreach ($row->getMetricValues() as $i => $metric) {
 					$name = $responseMonth->getMetricHeaders()[$i]->getName();
-					$dataMonth[$name] = $metric->getValue();
+					$gaMonth[$name] = $metric->getValue();
 				}
+			}
+			if (!empty($gaMonth)) {
+				$dataMonth = $gaMonth;
 			}
 		} catch (Throwable $e) {
 			log_message('error', 'GA4 dashboard error: ' . $e->getMessage());
@@ -197,8 +208,96 @@ class Home extends MY_Controller
 
 		$this->data['data'] = $dataWeek;
 		$this->data['dataMonth'] = $dataMonth;
+		$this->data['chartSeries'] = $chartSeries;
 
 		$this->data['temp'] = 'admin/home/index';
 		$this->load->view('admin/main', $this->data);
+	}
+
+	private function get_local_traffic_stats()
+	{
+		$from = date('Y-m-d 00:00:00', strtotime('-6 days'));
+
+		$newUsers = (int) $this->db
+			->where('created >=', $from)
+			->count_all_results('user');
+
+		$sessions = (int) $this->db
+			->where('created >=', $from)
+			->count_all_results('transaction');
+
+		$activeRow = $this->db
+			->select('COUNT(DISTINCT user_id) AS total', false)
+			->where('created >=', $from)
+			->get('transaction')
+			->row();
+		$activeUsers = $activeRow ? (int) $activeRow->total : 0;
+
+		$engagedSessions = (int) $this->db
+			->where('created >=', $from)
+			->where('status >', 0)
+			->count_all_results('transaction');
+
+		return array(
+			'activeUsers' => max($activeUsers, $newUsers),
+			'newUsers' => $newUsers,
+			'sessions' => $sessions,
+			'engagedSessions' => $engagedSessions,
+		);
+	}
+
+	private function get_local_month_stats()
+	{
+		$startOfMonth = date('Y-m-01 00:00:00');
+
+		$totalUsers = (int) $this->db
+			->where('created >=', $startOfMonth)
+			->count_all_results('user');
+
+		$newUsers = $totalUsers;
+
+		$orderUsers = $this->db
+			->select('COUNT(DISTINCT user_id) AS total', false)
+			->where('created >=', $startOfMonth)
+			->get('transaction')
+			->row();
+
+		if ($orderUsers && (int) $orderUsers->total > $totalUsers) {
+			$totalUsers = (int) $orderUsers->total;
+		}
+
+		return array(
+			'totalUsers' => $totalUsers,
+			'newUsers' => $newUsers,
+		);
+	}
+
+	private function get_local_chart_series()
+	{
+		$labels = array();
+		$dailyOrders = array();
+		$dailyNewUsers = array();
+
+		for ($i = 6; $i >= 0; $i--) {
+			$day = date('Y-m-d', strtotime("-{$i} days"));
+			$nextDay = date('Y-m-d', strtotime('-' . ($i - 1) . ' days'));
+			$labels[] = date('d/m', strtotime($day));
+
+			$dailyOrders[] = (int) $this->db
+				->where('created >=', $day . ' 00:00:00')
+				->where('created <', $nextDay . ' 00:00:00')
+				->count_all_results('transaction');
+
+			$dailyNewUsers[] = (int) $this->db
+				->where('created >=', $day . ' 00:00:00')
+				->where('created <', $nextDay . ' 00:00:00')
+				->count_all_results('user');
+		}
+
+		return array(
+			'labels' => $labels,
+			'dailyOrders' => $dailyOrders,
+			'dailyNewUsers' => $dailyNewUsers,
+		);
 	}
 }

@@ -95,6 +95,12 @@
 					</div>
 				  </div>
 				  <div class="form-group">
+				    <label for="inputStock" class="col-sm-2 control-label">Tồn kho</label>
+				    <div class="col-sm-5">
+				      <input type="number" name='stock' class="form-control" id="inputStock" min="0" placeholder="Nhập số lượng tồn kho" value="<?php echo $product->stock; ?>">
+				    </div>
+				  </div>
+				  <div class="form-group">
 				    <div class="col-sm-offset-2 col-sm-5">
 				      <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
 				    </div>

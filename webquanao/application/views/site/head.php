@@ -9,15 +9,17 @@
 <script type="text/javascript" src="<?php echo public_url('js/raty/jquery.raty.min.js') ?>"></script>
 <script type="text/javascript">
 	(function() {
-		var chatSessionKey = 'chative_loaded_once';
-		if (sessionStorage.getItem(chatSessionKey)) {
+		if (document.getElementById('chative-messenger-script')) {
 			return;
 		}
 
-		sessionStorage.setItem(chatSessionKey, '1');
 		var chativeScript = document.createElement('script');
-		chativeScript.src = 'https://messenger.svc.chative.io/static/v1.0/channels/s9e9bba20-9d26-4e8b-ba6c-05defd7bc1c9/messenger.js?mode=livechat';
+		chativeScript.id = 'chative-messenger-script';
+		chativeScript.src = 'https://messenger.svc.chative.io/static/v1.0/channels/s421f6635-9e6c-4a14-a621-af9385424f8f/messenger.js?mode=livechat';
 		chativeScript.defer = true;
+		chativeScript.onerror = function() {
+			console.warn('Không tải được chatbot Chative. Kiểm tra kết nối mạng hoặc cấu hình channel trên chative.io');
+		};
 		document.head.appendChild(chativeScript);
 	})();
 </script>

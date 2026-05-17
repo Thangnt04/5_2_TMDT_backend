@@ -143,20 +143,6 @@ class Transaction extends MY_Controller {
 		
 		$this->db->trans_start();
 		
-		$input = array();
-		$input['where'] = array('transaction_id' => $id);
-		$orders = $this->order_model->get_list($input);
-		
-		foreach ($orders as $value) {
-			$product = $this->product_model->get_info($value->product_id);
-			if ($product) {
-				// Sửa lỗi nhỏ: nên cộng với số lượng đặt mua (qty) chứ không phải +1
-                $qty_ordered = (int)$value->qty;
-                $new_stock = $product->stock - $qty_ordered;
-                $this->product_model->update($product->id, ['stock' => $new_stock]);
-			}
-		}
-
 		$data = array();
 		$data['status'] = '2';
 		$update_success = $this->transaction_model->update($id, $data);
