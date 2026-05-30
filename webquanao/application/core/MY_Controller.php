@@ -39,7 +39,14 @@ class MY_Controller extends CI_Controller
 					$this->data['carts'] = $carts;
 					$this->data['total_items'] = $this->cart_model->get_sum('qty', ['user_id' => $user->id]);
 				} else {
-					$this->data['total_items'] = NULL;
+					$guest_cart = $this->session->userdata('guest_cart');
+					if (!$guest_cart) $guest_cart = [];
+					$this->data['carts'] = $guest_cart;
+					$total_qty = 0;
+					foreach ($guest_cart as $item) {
+						$total_qty += $item->qty;
+					}
+					$this->data['total_items'] = $total_qty;
 				}
 
 				// Bật profiler

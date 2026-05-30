@@ -49,7 +49,7 @@ $(document).ready(function () {
 
 		// Gửi request đến service OpenAI
 		$.ajax({
-			url: "http://openai:5002/api/product/description",
+			url: "http://127.0.0.1:5002/api/product/description",
 			type: "POST",
 			data: formData,
 			processData: false,

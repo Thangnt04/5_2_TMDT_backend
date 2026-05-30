@@ -1,3 +1,4 @@
+SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `cart`;
@@ -218,6 +219,7 @@ CREATE TABLE IF NOT EXISTS `shipping_tracking` (
   FOREIGN KEY (`shipping_fee_rule_id`) REFERENCES `shipping_fee_rules`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Admin mật khẩu: 11111111 (8 chữ số 1, md5 trong DB)
 INSERT INTO `admin` (`name`, `email`, `password`, `level`, `created`) VALUES
 ('Goo', 'admin@gmail.com', '1bbd886460827015e5d605ed44252251', 0, '2018-01-19 03:14:07'),
 ('Mod đz', 'mod@gmail.com', '1bbd886460827015e5d605ed44252251', 1, '2018-01-19 03:14:07'),

@@ -51,6 +51,23 @@
 
 
 <div class="row">
+	<!-- Thêm Widget Doanh thu -->
+	<div class="col-xs-12 col-md-6 col-lg-3">
+		<div class="panel panel-teal panel-widget" style="border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+			<div class="row no-padding">
+				<div class="col-sm-3 col-lg-5 widget-left" style="background-color: #28a745; color: white; border-radius: 8px 0 0 8px;">
+					<svg class="glyph stroked line-graph">
+						<use xlink:href="#stroked-line-graph"></use>
+					</svg>
+				</div>
+				<div class="col-sm-9 col-lg-7 widget-right">
+					<div class="large" style="color: #28a745;"><?php echo number_format($revenue_7_days); ?>đ</div>
+					<div class="text-muted">Doanh thu 7 ngày</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<div class="col-xs-12 col-md-6 col-lg-3">
 		<div class="panel panel-blue panel-widget ">
 			<div class="row no-padding">
@@ -60,8 +77,8 @@
 					</svg>
 				</div>
 				<div class="col-sm-9 col-lg-7 widget-right">
-					<div class="large"><?php echo $total_order; ?></div>
-					<div class="text-muted">Đơn hàng mới</div>
+					<div class="large"><?php echo $total_all_orders; ?></div>
+					<div class="text-muted">Đơn mới 7 ngày</div>
 				</div>
 			</div>
 		</div>
@@ -76,7 +93,7 @@
 				</div>
 				<div class="col-sm-9 col-lg-7 widget-right">
 					<div class="large"><?php echo $total_comments; ?></div>
-					<div class="text-muted">Bình luận</div>
+					<div class="text-muted">Bình luận 7 ngày</div>
 				</div>
 			</div>
 		</div>
@@ -91,7 +108,7 @@
 				</div>
 				<div class="col-sm-9 col-lg-7 widget-right">
 					<div class="large"><?php echo $new_customers; ?></div>
-					<div class="text-muted">Khách hàng mới</div>
+					<div class="text-muted">Khách mới 7 ngày</div>
 				</div>
 			</div>
 		</div>
@@ -106,7 +123,7 @@
 				</div>
 				<div class="col-sm-9 col-lg-7 widget-right">
 					<div class="large"><?php echo number_format($total_views); ?></div>
-					<div class="text-muted">Lượt xem</div>
+					<div class="text-muted">Lượt xem (All time)</div>
 				</div>
 			</div>
 		</div>
@@ -154,7 +171,7 @@
 				], JSON_UNESCAPED_UNICODE) ?>'>
 </div>
 
-<!-- Thống kê sản phẩm -->
+	<!-- Thống kê sản phẩm -->
 <div class="row">
 	<div class="col-lg-12">
 		<div class="panel panel-default">
@@ -164,7 +181,7 @@
 					<!-- 5 sản phẩm bán chạy nhất -->
 					<div class="col-md-6">
 						<div class="panel panel-primary">
-							<div class="panel-heading">5 sản phẩm bán chạy nhất</div>
+							<div class="panel-heading">5 sản phẩm bán chạy nhất (7 ngày qua)</div>
 							<div class="panel-body">
 								<div class="table-responsive">
 									<table class="table table-striped table-bordered table-hover">
@@ -173,7 +190,7 @@
 												<th>Tên sản phẩm</th>
 												<th>Giá</th>
 												<th>Lượt xem</th>
-												<th>Đã bán</th>
+												<th>Đã bán (7 ngày)</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -195,7 +212,7 @@
 					<!-- 5 sản phẩm bán ít nhất -->
 					<div class="col-md-6">
 						<div class="panel panel-danger">
-							<div class="panel-heading">5 sản phẩm bán ít nhất</div>
+							<div class="panel-heading">5 sản phẩm bán ít nhất (7 ngày qua)</div>
 							<div class="panel-body">
 								<div class="table-responsive">
 									<table class="table table-striped table-bordered table-hover">
@@ -204,7 +221,7 @@
 												<th>Tên sản phẩm</th>
 												<th>Giá</th>
 												<th>Lượt xem</th>
-												<th>Đã bán</th>
+												<th>Đã bán (7 ngày)</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -228,7 +245,7 @@
 					<!-- 5 sản phẩm được đánh giá tốt nhất -->
 					<div class="col-md-6">
 						<div class="panel panel-success">
-							<div class="panel-heading">5 sản phẩm được đánh giá tốt nhất</div>
+							<div class="panel-heading">5 sản phẩm được đánh giá tốt nhất (7 ngày qua)</div>
 							<div class="panel-body">
 								<div class="table-responsive">
 									<table class="table table-striped table-bordered table-hover">
@@ -237,7 +254,7 @@
 												<th>Tên sản phẩm</th>
 												<th>Giá</th>
 												<th>Lượt xem</th>
-												<th>Đánh giá</th>
+												<th>Đánh giá (7 ngày)</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -259,7 +276,7 @@
 					<!-- 5 sản phẩm được đánh giá kém nhất -->
 					<div class="col-md-6">
 						<div class="panel panel-warning">
-							<div class="panel-heading">5 sản phẩm được đánh giá kém nhất</div>
+							<div class="panel-heading">5 sản phẩm được đánh giá kém nhất (7 ngày qua)</div>
 							<div class="panel-body">
 								<div class="table-responsive">
 									<table class="table table-striped table-bordered table-hover">
@@ -326,115 +343,5 @@
 </div><!--/.row-->
 
 
-<div class="row">
-	<div class="col-xs-6 col-md-3">
-		<div class="panel panel-default">
-			<div class="panel-body easypiechart-panel">
-				<h4>Đơn hàng mới</h4>
-				<div class="easypiechart" id="easypiechart-blue" data-percent="<?php echo $order_percent; ?>"><span class="percent"><?php echo $order_percent; ?>%</span>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-xs-6 col-md-3">
-		<div class="panel panel-default">
-			<div class="panel-body easypiechart-panel">
-				<h4>Bình luận mới</h4>
-				<div class="easypiechart" id="easypiechart-orange" data-percent="<?php echo $comment_percent; ?>"><span class="percent"><?php echo $comment_percent; ?>%</span>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-xs-6 col-md-3">
-		<div class="panel panel-default">
-			<div class="panel-body easypiechart-panel">
-				<h4>Người dùng mới</h4>
-				<div class="easypiechart" id="easypiechart-teal" data-percent="<?php echo $user_percent; ?>"><span class="percent"><?php echo $user_percent; ?>%</span>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-xs-6 col-md-3">
-		<div class="panel panel-default">
-			<div class="panel-body easypiechart-panel">
-				<h4>Lượt truy cập mới</h4>
-				<div class="easypiechart" id="easypiechart-red" data-percent="<?php echo $visitor_percent; ?>"><span class="percent"><?php echo $visitor_percent; ?>%</span>
-				</div>
-			</div>
-		</div>
-	</div>
-</div><!--/.row-->
 
-<!-- Nút Phân tích AI và kết quả (Đã tối ưu) -->
-<div class="row">
-	<div class="col-lg-12">
-		<button id="btnAnalyzeAI-1" class="btn-analyze-ai btn btn-primary btn-lg" style="margin-bottom: 20px;">
-			<i class="fa fa-bar-chart"></i> Phân tích số liệu kinh doanh
-		</button>
-
-		<!-- Ô hiển thị kết quả phân tích -->
-		<div class="panel panel-default analysis-result-panel" style="display: none;">
-			<div class="panel-heading">
-				<h3 class="panel-title">Phân tích ngắn gọn số liệu kinh doanh</h3>
-			</div>
-			<div class="panel-body">
-				<div class="loading-analysis" style="text-align: center; display: none;">
-					<i class="fa fa-spinner fa-spin fa-3x"></i>
-					<p>Đang phân tích dữ liệu...</p>
-				</div>
-				<div class="analysis-result markdown-content" style="white-space: normal;"></div>
-			</div>
-		</div>
-
-		<!-- CSS cho định dạng Markdown (đã tối ưu) -->
-		<style>
-			.markdown-content h1,
-			.markdown-content h2,
-			.markdown-content h3 {
-				margin-top: 15px;
-				margin-bottom: 10px;
-				font-weight: 600;
-			}
-
-			.markdown-content h1 {
-				font-size: 20px;
-			}
-
-			.markdown-content h2 {
-				font-size: 18px;
-			}
-
-			.markdown-content h3 {
-				font-size: 16px;
-			}
-
-			.markdown-content ul,
-			.markdown-content ol {
-				margin-left: 15px;
-				margin-bottom: 10px;
-			}
-
-			.markdown-content p {
-				margin-bottom: 10px;
-			}
-
-			.markdown-content table {
-				width: 100%;
-				max-width: 100%;
-				margin-bottom: 15px;
-				border-collapse: collapse;
-			}
-
-			.markdown-content table th,
-			.markdown-content table td {
-				padding: 6px;
-				line-height: 1.3;
-				border: 1px solid #ddd;
-			}
-
-			.markdown-content table th {
-				background-color: #f5f5f5;
-			}
-		</style>
-	</div>
-</div>
+

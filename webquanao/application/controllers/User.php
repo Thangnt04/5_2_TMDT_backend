@@ -11,6 +11,8 @@ class User extends MY_Controller
 		$this->load->library('verify_library');
 		$this->load->helper('form');
 		$this->load->helper('email');
+		$this->load->helper('recaptcha');
+		$this->load->model('cart_model');
 	}
 
 	public function index()
@@ -64,8 +66,8 @@ class User extends MY_Controller
 			if (!$this->check_email($data['email'])) {
 				$errors['email'] = "Email đã tồn tại";
 			}
-			if ($data['password'] < 8) {
-				echo "Mật khẩu phải từ 8 kí tự trở lên";
+			if (strlen($data['password']) < 8) {
+				$errors['password'] = "Mật khẩu phải từ 8 kí tự trở lên";
 			}
 
 			if (!preg_match('/^[0-9]{8,11}$/', $data['phone'])) {
@@ -88,10 +90,12 @@ class User extends MY_Controller
 				$errors['ward'] = "Vui lòng chọn Phường/Xã";
 			}
 
-			// Kiểm tra recaptcha
-			$captcha = $data['recaptcha'];
-			if (!$this->verify_library->verify_recaptcha($captcha)) {
-				$errors['recaptcha'] = "xác thực recaptcha thất bại";
+			// Kiểm tra recaptcha (bỏ qua khi chưa cấu hình key hợp lệ)
+			if (recaptcha_is_enabled()) {
+				$captcha = isset($data['recaptcha']) ? $data['recaptcha'] : '';
+				if (!$this->verify_library->verify_recaptcha($captcha)) {
+					$errors['recaptcha'] = "Xác thực reCAPTCHA thất bại";
+				}
 			}
 
 			// Nếu có lỗi, trả về danh sách lỗi
@@ -104,6 +108,7 @@ class User extends MY_Controller
 			$time = date('Y-m-d H:i:s');
 			$name = $data['name'];
 			$email = $data['email'];
+			$mailConfigured = mail_is_configured();
 			$data_saved = array(
 				'name' => $name,
 				'email' => $email,
@@ -112,14 +117,37 @@ class User extends MY_Controller
 				'city' => $data['city'],
 				'district' => $data['district'],
 				'ward' => $data['ward'],
-				'phone' => $data['ward'],
-				'created' => $time
+				'phone' => $data['phone'],
+				'created' => $time,
+				'is_verified' => $mailConfigured ? 0 : 1,
+				'date_modified' => $time,
 			);
 
-			// Gửi Email xác thực 
+			if (!$this->user_model->create($data_saved)) {
+				echo json_encode([
+					'status' => 'error',
+					'message' => 'Không thể lưu tài khoản. Vui lòng thử lại.',
+				], JSON_UNESCAPED_UNICODE);
+				return;
+			}
+
+			if (!$mailConfigured) {
+				echo json_encode([
+					'status' => 'success',
+					'saved_directly' => true,
+					'message' => 'Đăng ký thành công! Bạn có thể đăng nhập ngay.',
+				], JSON_UNESCAPED_UNICODE);
+				return;
+			}
+
+			// Gửi email xác thực (tài khoản đã lưu, bấm link để kích hoạt is_verified)
 			$token = $this->verify_library->generate_verification_token($data_saved);
 			if (!$token) {
-				echo json_encode(["status" => "error", "message" => "Không thể tạo token xác thực", "errors" => $errors],  JSON_UNESCAPED_UNICODE);
+				echo json_encode([
+					'status' => 'success',
+					'saved_directly' => true,
+					'message' => 'Đã tạo tài khoản. Không gửi được email xác thực — bạn vẫn có thể đăng nhập.',
+				], JSON_UNESCAPED_UNICODE);
 				return;
 			}
 			$verification_link = base_url("xac-thuc-mail/$token");
@@ -167,10 +195,18 @@ class User extends MY_Controller
 				"
 			);
 			if (!$validation_email) {
-				echo json_encode(["status" => "error", "message" => "Gửi email thất bại", "errors" => $errors],  JSON_UNESCAPED_UNICODE);
+				echo json_encode([
+					'status' => 'success',
+					'saved_directly' => true,
+					'message' => 'Tài khoản đã được lưu. Gửi email xác thực thất bại — bạn vẫn có thể đăng nhập.',
+				], JSON_UNESCAPED_UNICODE);
 				return;
 			}
-			echo json_encode(["status" => "success", "message" => "Vui lòng xác nhận email tại $email"],  JSON_UNESCAPED_UNICODE);
+			echo json_encode([
+				'status' => 'success',
+				'saved_directly' => false,
+				'message' => "Đăng ký thành công! Vui lòng kiểm tra email $email và bấm link xác thực (có thể đăng nhập trước khi xác thực).",
+			], JSON_UNESCAPED_UNICODE);
 			return;
 		}
 		$this->load->view('site/user/register');
@@ -389,6 +425,32 @@ class User extends MY_Controller
 		}
 
 		$this->session->set_userdata('user', $user);
+
+		// Đồng bộ giỏ hàng từ session (guest_cart) vào database
+		$guest_cart = $this->session->userdata('guest_cart');
+		if (!empty($guest_cart)) {
+			foreach ($guest_cart as $item) {
+				$qty_ex = $this->cart_model->get_info_rule(['user_id' => $user->id, 'product_id' => $item->product_id], 'qty');
+				if ($qty_ex) {
+					$this->cart_model->update_rule(
+						['user_id' => $user->id, 'product_id' => $item->product_id],
+						['qty' => $qty_ex->qty + $item->qty]
+					);
+				} else {
+					$this->cart_model->create([
+						'user_id' => $user->id,
+						'product_id' => $item->product_id,
+						'qty' => $item->qty,
+						'price' => $item->price,
+						'name' => $item->name,
+						'image_link' => $item->image_link,
+						'rowid' => $item->rowid
+					]);
+				}
+			}
+			$this->session->unset_userdata('guest_cart');
+		}
+
 		redirect(base_url());
 	}
 
@@ -424,6 +486,31 @@ class User extends MY_Controller
 			}
 
 			$this->session->set_userdata('user', $user);
+
+			// Đồng bộ giỏ hàng từ session (guest_cart) vào database
+			$guest_cart = $this->session->userdata('guest_cart');
+			if (!empty($guest_cart)) {
+				foreach ($guest_cart as $item) {
+					$qty_ex = $this->cart_model->get_info_rule(['user_id' => $user->id, 'product_id' => $item->product_id], 'qty');
+					if ($qty_ex) {
+						$this->cart_model->update_rule(
+							['user_id' => $user->id, 'product_id' => $item->product_id],
+							['qty' => $qty_ex->qty + $item->qty]
+						);
+					} else {
+						$this->cart_model->create([
+							'user_id' => $user->id,
+							'product_id' => $item->product_id,
+							'qty' => $item->qty,
+							'price' => $item->price,
+							'name' => $item->name,
+							'image_link' => $item->image_link,
+							'rowid' => $item->rowid
+						]);
+					}
+				}
+				$this->session->unset_userdata('guest_cart');
+			}
 
 			echo json_encode(["status" => "success", "message" => "Đăng nhập thành công"], JSON_UNESCAPED_UNICODE);
 			return;

@@ -6,8 +6,10 @@
 	<script src="https://cdn.tailwindcss.com"></script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"> </script>
-	<script src="https://www.google.com/recaptcha/api.js" async defer>
-	</script>
+	<?php $this->load->helper('recaptcha'); ?>
+	<?php if (recaptcha_is_enabled()) { ?>
+	<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+	<?php } ?>
 
 	<style>
 		.g-recaptcha>div:first-child {
@@ -172,7 +174,11 @@
 							</div>
 						</div>
 						<div>
-							<div class="g-recaptcha form-group" style="margin: 0;" data-sitekey="6LcKdPUqAAAAAGv-BwfXyqkrqpTuVEUCQLGwbG6Z" data-callback="onCaptchaSuccess"></div>
+							<?php if (recaptcha_is_enabled()) { ?>
+							<div class="g-recaptcha form-group" style="margin: 0;" data-sitekey="<?php echo htmlspecialchars(recaptcha_site_key(), ENT_QUOTES, 'UTF-8'); ?>" data-callback="onCaptchaSuccess"></div>
+							<?php } else { ?>
+							<p class="text-gray-600 text-sm mb-4">reCAPTCHA tạm tắt (môi trường dev / chưa cấu hình key).</p>
+							<?php } ?>
 						</div>
 						<button class="w-full text-white text-3xl font-medium py-3 rounded-lg transition duration-300 mb-[100px]"
 							style="background-color: rgb(61, 177, 212);" id="submitBtn"
@@ -183,12 +189,9 @@
 					</div>
 				</div>
 			</div>
-			<div id="hiddenData" data-expire="<?php echo getenv('JWT_EXPIRE'); ?>" style="display: none"></div>
+			<div id="hiddenData" data-expire="<?php echo getenv('JWT_EXPIRE'); ?>" data-recaptcha-enabled="<?php echo recaptcha_is_enabled() ? '1' : '0'; ?>" style="display: none"></div>
 			<?php $this->load->view('site/footer', $this->data); ?>
 		</div>
-		<script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit"
-			async defer>
-		</script>
 		<script src="<?php echo public_url('site/'); ?>bootstrap/js/bootstrap.min.js"></script>
 		<script src="<?php echo public_url('site/'); ?>js/register.js"></script>
 </body>

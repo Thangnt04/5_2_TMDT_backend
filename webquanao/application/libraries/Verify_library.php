@@ -21,9 +21,17 @@ class Verify_library
 
     public function verify_recaptcha($recaptchaResponse)
     {
-        // Put secret key here, which we get
-        // from google console
-        $secret_key = getenv('PRIVATE_KEY');
+        $this->CI->load->helper('recaptcha');
+
+        if (!recaptcha_is_enabled()) {
+            return true;
+        }
+
+        if (empty($recaptchaResponse)) {
+            return false;
+        }
+
+        $secret_key = recaptcha_secret_key();
 
         // Hitting request to the URL, Google will
         // respond with success or error scenario

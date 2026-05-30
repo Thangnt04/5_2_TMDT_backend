@@ -1,4 +1,0 @@
-.env
-.env.private
-*.log
-__pycache__/

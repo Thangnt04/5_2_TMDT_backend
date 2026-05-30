@@ -9,7 +9,7 @@ class Validation extends MY_Controller
         $this->load->model('user_model');
         $this->load->library('Jwt_library');
     }
-    public function verify_token($token)
+    public function verify_token($token, $allowExisting = false)
     {
         try {
             // Giải mã token
@@ -29,14 +29,22 @@ class Validation extends MY_Controller
 
             $exists = $this->user_model->check_exists(['email' => $email]);
 
-            //Nếu tồn tại, không cho phép đăng kí
             if ($exists) {
+                if ($allowExisting) {
+                    return [
+                        'status' => true,
+                        'message' => 'user_exists',
+                        'data' => $payload['data'],
+                        'existing' => true,
+                    ];
+                }
                 return ['status' => false, 'message' => 'user_exist'];
             }
             return [
                 'status' => true,
                 'message' => 'verified_token',
-                'data' => $payload['data']
+                'data' => $payload['data'],
+                'existing' => false,
             ];
         } catch (Exception $e) {
             return ['status' => false, 'message' => 'error: ' . $e->getMessage()];
@@ -49,10 +57,22 @@ class Validation extends MY_Controller
             show_404();
             return;
         }
-        $result = $this->verify_token($token);
+        $result = $this->verify_token($token, true);
 
         if ($result['status']) {
-            $this->user_model->create($result['data']);
+            if (!empty($result['existing'])) {
+                $user = $this->user_model->get_info_rule(['email' => $result['data']['email']]);
+                if ($user) {
+                    $this->user_model->update($user->id, [
+                        'is_verified' => 1,
+                        'date_modified' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            } else {
+                $result['data']['is_verified'] = 1;
+                $result['data']['date_modified'] = date('Y-m-d H:i:s');
+                $this->user_model->create($result['data']);
+            }
         }
         $this->data['token_info'] = $result;
         $this->load->view('site/validation/index.php', $this->data);

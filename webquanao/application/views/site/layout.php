@@ -19,7 +19,6 @@
 <body>
 	<div class="container">
 		<?php $this->load->view('site/header',$this->data); ?>
-		<?php $this->load->view('site/slider',$this->data); ?>
 		<?php $this->load->view($temp,$this->data); ?>
 		<?php $this->load->view('site/footer',$this->data); ?>
 	</div>

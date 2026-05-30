@@ -594,7 +594,7 @@ class Product extends MY_Controller {
 		];
 
 		// Gọi API OpenAI để tổng hợp đánh giá
-		$openai_url = 'http://openai:5002/api/product/review-summary';
+		$openai_url = 'http://host.docker.internal:5002/api/product/review-summary';
 
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $openai_url);

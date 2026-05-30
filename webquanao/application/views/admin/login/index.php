@@ -10,13 +10,18 @@
 			<div class="login-panel panel panel-default">
 				<div class="panel-heading">Đăng nhập</div>
 				<div class="panel-body">
+					<?php if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') { ?>
+						<p class="text-muted" style="font-size:12px;margin-bottom:12px;">
+							Tài khoản mẫu: <strong>admin@gmail.com</strong> / <strong>11111111</strong> (8 số 1)
+						</p>
+					<?php } ?>
 					<form role="form" method="post">
 						<fieldset>
 							<div class="form-group">
 								<input class="form-control" placeholder="E-mail" name="email" type="email" autofocus=""><?php echo form_error('email'); ?>
 							</div>
 							<div class="form-group">
-								<input class="form-control" placeholder="Mật khẩu" name="password" type="password" value=""><?php echo form_error('email'); ?>
+								<input class="form-control" placeholder="Mật khẩu" name="password" type="password" value=""><?php echo form_error('password'); ?>
 							</div>
 							<h2><?php echo form_error('login'); ?></h2>
 							<div class="checkbox">

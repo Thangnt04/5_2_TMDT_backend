@@ -1,2 +1,0 @@
-#Lỗi: Public Key Retrieval is not allowed --> DBeaver
-- Sửa driver properties: allowPublicKeyRetrieval --> true

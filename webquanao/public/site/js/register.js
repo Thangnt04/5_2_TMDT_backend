@@ -42,6 +42,9 @@ function renderCity(data) {
 	};
 }
 let recaptchaToken = "";
+const hiddenDataEl = document.getElementById("hiddenData");
+const recaptchaEnabled =
+	hiddenDataEl && hiddenDataEl.getAttribute("data-recaptcha-enabled") === "1";
 
 function onCaptchaSuccess(token) {
 	recaptchaToken = token;
@@ -49,6 +52,9 @@ function onCaptchaSuccess(token) {
 }
 
 function validateRecaptcha() {
+	if (!recaptchaEnabled) {
+		return true;
+	}
 	if (!recaptchaToken) {
 		// Loại thông báo: 'success' hoặc 'error'
 		const type = "error"; // hoặc 'error'
@@ -112,7 +118,9 @@ document
 		isFetching = true;
 		let isValid = true;
 
-		const response = grecaptcha.getResponse();
+		const response = recaptchaEnabled && typeof grecaptcha !== "undefined"
+			? grecaptcha.getResponse()
+			: "dev-skip";
 
 		function showError(input, message) {
 			clearError(input);
@@ -221,7 +229,7 @@ document
 		}
 
 		// Kiểm tra recaptcha
-		if (!validateRecaptcha() || !response) {
+		if (!validateRecaptcha() || (recaptchaEnabled && !response)) {
 			isFetching = false;
 			return;
 		}
@@ -241,175 +249,64 @@ document
 			recaptcha: recaptchaToken,
 		};
 
-		// Gửi dữ liệu lên server qua fetch API (Fake API endpoint)
-		// Cập nhật thời gian đếm ngược mỗi giây
-		let countdown = document.getElementById("hiddenData").dataset.expire; //ENV
-		// Định nghĩa hàm ngoài
-		async function myExternalFunction(url, email = null, interval = 1000) {
-			let emailInfo = {
-				email: email,
-			};
-			while (true) {
-				try {
-					const response = await fetch(url, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify(emailInfo),
-					});
-					const data = await response.json();
+		const registerUrl =
+			(window.location.origin || "") + "/user/register";
 
-					if (data.status === "success") {
-						return data;
-					}
-				} catch (error) {
-					console.error("Fetch error:", error);
-				}
-
-				await new Promise((resolve) => setTimeout(resolve, interval));
-			}
-		}
-		await fetch("http://localhost:8080/user/register", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(formData),
-		})
-			.then((response) => response.text())
-			.then((text) => {
-				return JSON.parse(text); // Chuyển thành JSON thủ công
-			})
-			.then((data) => {
-				// Hiển thị popup đặt hàng thành công
-				if (data.status == "success") {
-					Swal.fire({
-						icon: "info", // Biểu tượng thông tin
-						title: "Sắp xong rồi...", // Tiêu đề
-						text: data.message,
-						customClass: {
-							confirmButton: "my-custom-button", // Tùy chỉnh lớp nút xác nhận
-						},
-						confirmButtonText: "OK", // Văn bản của nút xác nhận
-						showConfirmButton: false, // Ẩn nút xác nhận
-						timer: countdown * 1000, // Thời gian hiển thị popup (10 giây)
-						timerProgressBar: true, // Hiển thị thanh tiến trình đếm ngược
-					}).then((result) => {
-						// Sau khi popup đóng hoặc khi thời gian hết, chuyển hướng
-						if (result.dismiss === Swal.DismissReason.timer) {
-							// Popup bị đóng do hết thời gian
-							window.location.href = "/";
-						}
-					});
-					myExternalFunction(
-						"http://localhost:8080/user/check_validation_mail",
-						email
-					)
-						.then((data) => {
-							if (data.status === "success") {
-								const countdown = 3; // tổng thời gian
-								let remaining = countdown;
-								Swal.fire({
-									icon: "success",
-									title: "Đăng kí thành công",
-									html: `
-											<p><strong>Chuyển hướng đăng nhập sau <span id="countdown-timer">${remaining}</span> giây...</strong></p>
-										`,
-									customClass: {
-										confirmButton: "my-custom-button",
-									},
-									confirmButtonText: "Về trang chủ",
-									showConfirmButton: true,
-									timer: countdown * 1000,
-									timerProgressBar: true,
-									didOpen: () => {
-										const timerEl = document.getElementById("countdown-timer");
-										const interval = setInterval(() => {
-											remaining--;
-											if (timerEl) timerEl.textContent = remaining;
-											if (remaining <= 0) clearInterval(interval);
-										}, 1000);
-									},
-								}).then((result) => {
-									if (result.isConfirmed) {
-										// Chờ thêm 3 giây nữa sau khi popup đóng
-										setTimeout(() => {
-											window.location.href = "/";
-										}, 3000);
-									} else {
-										window.location.href = "/dang-nhap";
-									}
-								});
-							}
-						})
-						.catch((error) => {
-							console.error("Error:", error);
-							// Reset reCAPTCHA for the next submission
-							grecaptcha.reset();
-							document.getElementById("submitBtn").disabled = true;
-							recaptchaToken = "";
-						});
-				} else {
-					if (data.status === "error") {
-						let detailHTML = "";
-
-						if (data.errors) {
-							detailHTML +=
-								'<ul style="text-align: left; font-size: larger;">';
-							for (const key in data.errors) {
-								detailHTML += `<li><strong>${key}:</strong> ${data.errors[key]}</li>`;
-							}
-							detailHTML += "</ul>";
-						}
-
-						Swal.fire({
-							icon: "error",
-							title: "Đổi mật khẩu thất bại",
-							text: data.message,
-							showCancelButton: true,
-							confirmButtonText: "Thử lại",
-							cancelButtonText: "Xem chi tiết",
-							customClass: {
-								confirmButton: "my-custom-button",
-								cancelButton: "my-custom-button",
-							},
-						}).then((result) => {
-							if (result.dismiss === Swal.DismissReason.cancel) {
-								// Mở popup chi tiết lỗi
-								Swal.fire({
-									icon: "info",
-									title: "Chi tiết lỗi",
-									html: detailHTML,
-									confirmButtonText: "Đã hiểu",
-									customClass: {
-										confirmButton: "my-custom-button",
-									},
-								});
-							}
-						});
-					}
-
-					// Reset reCAPTCHA for the next submission
-					grecaptcha.reset();
-					document.getElementById("submitBtn").disabled = true;
-					recaptchaToken = "";
-				}
-			})
-			.catch((error) => {
-				Swal.fire({
-					icon: "error",
-					title: "Lỗi!",
-					customClass: {
-						confirmButton: "my-custom-button",
-					},
-					text: "Đã có lỗi xảy ra, vui lòng thử lại.",
-				});
-				console.error(error);
-				// Reset reCAPTCHA for the next submission
-				grecaptcha.reset();
-				document.getElementById("submitBtn").disabled = true;
-				recaptchaToken = "";
+		try {
+			const response = await fetch(registerUrl, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(formData),
 			});
+			const text = await response.text();
+			const data = JSON.parse(text);
+
+			if (data.status === "success") {
+				const redirectLogin = () => {
+					window.location.href = "/dang-nhap";
+				};
+				await Swal.fire({
+					icon: "success",
+					title: "Đăng ký thành công",
+					text: data.message,
+					confirmButtonText: "Đăng nhập ngay",
+					customClass: { confirmButton: "my-custom-button" },
+				});
+				redirectLogin();
+			} else if (data.status === "error") {
+				let detailHTML = "";
+				if (data.errors) {
+					detailHTML += '<ul style="text-align: left;">';
+					for (const key in data.errors) {
+						detailHTML += `<li><strong>${key}:</strong> ${data.errors[key]}</li>`;
+					}
+					detailHTML += "</ul>";
+				}
+				await Swal.fire({
+					icon: "error",
+					title: "Đăng ký thất bại",
+					text: data.message || "Vui lòng kiểm tra lại thông tin.",
+					html: detailHTML || undefined,
+					confirmButtonText: "Thử lại",
+					customClass: { confirmButton: "my-custom-button" },
+				});
+				if (recaptchaEnabled && typeof grecaptcha !== "undefined") {
+					grecaptcha.reset();
+				}
+				recaptchaToken = "";
+			}
+		} catch (error) {
+			console.error(error);
+			await Swal.fire({
+				icon: "error",
+				title: "Lỗi!",
+				text: "Đã có lỗi xảy ra, vui lòng thử lại.",
+				customClass: { confirmButton: "my-custom-button" },
+			});
+			if (recaptchaEnabled && typeof grecaptcha !== "undefined") {
+				grecaptcha.reset();
+			}
+			recaptchaToken = "";
+		}
 		isFetching = false;
 	});
