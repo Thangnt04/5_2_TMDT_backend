@@ -23,5 +23,7 @@
 		<?php $this->load->view('site/footer',$this->data); ?>
 	</div>
     <script src="<?php echo public_url('site/'); ?>bootstrap/js/bootstrap.min.js"></script>
+	<!-- Chative Live Chat -->
+	<script src="https://messenger.svc.chative.io/static/v1.0/channels/s421f6635-9e6c-4a14-a621-af9385424f8f/messenger.js?mode=livechat" defer="defer"></script>
 </body>
 </html>

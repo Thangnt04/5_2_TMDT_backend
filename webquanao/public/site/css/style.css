@@ -191,9 +191,7 @@ address {
 
 @media (min-width: 768px) {
   .container > .navbar-header,
-  .container-fluid > .navbar-header,
-  .container > .navbar-collapse,
-  .container-fluid > .navbar-collapse {
+  .container-fluid > .navbar-header {
     display: none;
     margin-left: -15px;
   }
@@ -435,4 +433,9 @@ address {
 
 .comment-list .comment-item:last-child {
 	border-bottom: none;
+}
+
+/* Cốc Cốc Savior Host Fix - Ngăn chặn lớp kính ảo che các thẻ input trên F12 */
+savior-host {
+    pointer-events: none !important;
 }

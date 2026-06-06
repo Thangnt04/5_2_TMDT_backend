@@ -8,22 +8,6 @@
 <link rel="stylesheet" type="text/css" href="<?php echo public_url('site/'); ?>css/style.css">
 <script type="text/javascript" src="<?php echo public_url('js/raty/jquery.raty.min.js') ?>"></script>
 <script type="text/javascript">
-	(function() {
-		if (document.getElementById('chative-messenger-script')) {
-			return;
-		}
-
-		var chativeScript = document.createElement('script');
-		chativeScript.id = 'chative-messenger-script';
-		chativeScript.src = 'https://messenger.svc.chative.io/static/v1.0/channels/s421f6635-9e6c-4a14-a621-af9385424f8f/messenger.js?mode=livechat';
-		chativeScript.defer = true;
-		chativeScript.onerror = function() {
-			console.warn('Không tải được chatbot Chative. Kiểm tra kết nối mạng hoặc cấu hình channel trên chative.io');
-		};
-		document.head.appendChild(chativeScript);
-	})();
-</script>
-<script type="text/javascript">
 	$(function() {
 		$.fn.raty.defaults.path = "<?php echo public_url('js/raty/img'); ?>";
 		$('.raty').raty({

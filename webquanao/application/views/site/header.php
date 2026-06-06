@@ -1,7 +1,7 @@
-<div class="row" style="margin-top: 8px; height: 110px">
+<div class="row" style="margin-top: 8px; margin-bottom: 8px;">
     <div class="col-xs-12 col-sm-3 col-md-3 col-lg-3 clearpadding">
         <a href="<?php echo base_url(); ?>">
-            <img src="<?php echo base_url(); ?>upload/logo.png" alt="Logo" class="img-responsive" style="height: 100px;">
+            <img src="<?php echo base_url(); ?>upload/logo.png" alt="Logo" class="img-responsive center-block" style="max-height: 100px;">
         </a>
     </div>
     <div class="col-xs-12 col-sm-6 col-md-6 col-lg-6 clearpadding text-center search-container">
@@ -18,7 +18,6 @@
     </div>
 </div>
 <div class="row">
-        <div class="row">
             <nav class="navbar navbar-info re-navbar">
                 <div class="container-fluid re-container-fluid">
                     <!-- Brand and toggle get grouped for better mobile display -->
@@ -77,6 +76,3 @@
                 </div><!-- /.container-fluid -->
             </nav>
         </div>
-
-
-</div>

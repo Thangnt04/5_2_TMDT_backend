@@ -21,301 +21,259 @@ class Home extends MY_Controller
 	}
 	public function index()
 	{
-		// Lấy mốc thời gian 7 ngày trước
-		$date = new DateTime();
-		$date->modify('-7 days');
-		$seven_days_ago = $date->format('Y-m-d H:i:s');
+		$filter = $this->input->get('filter');
+		if (!$filter) $filter = 'this_week';
 
-		// 1. Đơn hàng mới (chưa xử lý) trong 7 ngày qua
-		$input = array();
-		$input['where'] = "status = '0' AND created >= '$seven_days_ago'";
-		$total_order = $this->transaction_model->get_total($input);
-		$this->data['total_order'] = $total_order;
+		$from_date = $this->input->get('from_date');
+		$to_date = $this->input->get('to_date');
 
-		// Mốc thời gian 14 ngày trước để tính tăng trưởng
-		$date14 = new DateTime();
-		$date14->modify('-14 days');
-		$fourteen_days_ago = $date14->format('Y-m-d H:i:s');
+		$start_date = '';
+		$end_date = '';
 
-		// 2. Tổng số đơn hàng trong 7 ngày qua
-		$input_all_orders = array();
-		$input_all_orders['where'] = "created >= '$seven_days_ago'";
-		$total_all_orders = $this->transaction_model->get_total($input_all_orders);
+		switch ($filter) {
+			case 'today':
+				$start_date = date('Y-m-d 00:00:00');
+				$end_date = date('Y-m-d 23:59:59');
+				break;
+			case '7_days':
+				$start_date = date('Y-m-d 00:00:00', strtotime('-7 days'));
+				$end_date = date('Y-m-d 23:59:59');
+				break;
+			case 'this_week':
+				$start_date = date('Y-m-d 00:00:00', strtotime('monday this week'));
+				$end_date = date('Y-m-d 23:59:59', strtotime('sunday this week'));
+				break;
+			case 'this_month':
+				$start_date = date('Y-m-01 00:00:00');
+				$end_date = date('Y-m-t 23:59:59');
+				break;
+
+			case 'custom':
+				if ($from_date) $start_date = date('Y-m-d 00:00:00', strtotime($from_date));
+				if ($to_date) $end_date = date('Y-m-d 23:59:59', strtotime($to_date));
+				break;
+		}
+
+		$this->data['filter'] = $filter;
+		$this->data['from_date'] = $from_date;
+		$this->data['to_date'] = $to_date;
+
+		// 1. KPI
+		// Tổng đơn hàng
+		$this->db->where("created >= '$start_date'");
+		if ($end_date) $this->db->where("created <= '$end_date'");
+		$total_all_orders = $this->transaction_model->get_total();
 		$this->data['total_all_orders'] = $total_all_orders;
-		
-		// Đơn hàng 7 ngày trước đó
-		$input_prev_orders = array();
-		$input_prev_orders['where'] = "created >= '$fourteen_days_ago' AND created < '$seven_days_ago'";
-		$prev_all_orders = $this->transaction_model->get_total($input_prev_orders);
 
-		// Phần trăm tăng trưởng đơn hàng
-		$order_percent = ($prev_all_orders > 0) ? round((($total_all_orders - $prev_all_orders) / $prev_all_orders) * 100) : (($total_all_orders > 0) ? 100 : 0);
-		$this->data['order_percent'] = $order_percent;
+		// Đơn hàng thành công
+		$this->db->where("status > 0");
+		$this->db->where("created >= '$start_date'");
+		if ($end_date) $this->db->where("created <= '$end_date'");
+		$successful_orders = $this->transaction_model->get_total();
 
-		// 3. Tổng doanh thu trong 7 ngày qua
+		// Tổng doanh thu
 		$this->db->select_sum('amount', 'total_revenue');
 		$this->db->where('status >', 0);
-		$this->db->where('created >=', $seven_days_ago);
+		$this->db->where("created >= '$start_date'");
+		if ($end_date) $this->db->where("created <= '$end_date'");
 		$revenue_query = $this->db->get('transaction')->row();
-		$this->data['revenue_7_days'] = $revenue_query ? $revenue_query->total_revenue : 0;
+		$revenue = $revenue_query ? $revenue_query->total_revenue : 0;
+		$this->data['revenue'] = $revenue;
 
-		// 4. Tổng số bình luận trong 7 ngày qua
-		$input_comment = array();
-		$input_comment['where'] = "created >= '$seven_days_ago'";
-		$total_comments = $this->comment_model->get_total($input_comment);
-		$this->data['total_comments'] = $total_comments;
-		
-		// Bình luận 7 ngày trước đó
-		$input_prev_comment = array();
-		$input_prev_comment['where'] = "created >= '$fourteen_days_ago' AND created < '$seven_days_ago'";
-		$prev_comments = $this->comment_model->get_total($input_prev_comment);
-
-		// Phần trăm tăng trưởng bình luận
-		$comment_percent = ($prev_comments > 0) ? round((($total_comments - $prev_comments) / $prev_comments) * 100) : (($total_comments > 0) ? 100 : 0);
-		$this->data['comment_percent'] = $comment_percent;
-
-		// 5. Khách hàng mới (đăng ký trong 7 ngày qua)
-		$input_user = array();
-		$input_user['where'] = "created >= '$seven_days_ago'";
-		$new_customers = $this->user_model->get_total($input_user);
+		// Khách mới
+		$this->db->where("created >= '$start_date'");
+		if ($end_date) $this->db->where("created <= '$end_date'");
+		$new_customers = $this->user_model->get_total();
 		$this->data['new_customers'] = $new_customers;
-		
-		// Khách hàng mới 7 ngày trước đó
-		$input_prev_user = array();
-		$input_prev_user['where'] = "created >= '$fourteen_days_ago' AND created < '$seven_days_ago'";
-		$prev_customers = $this->user_model->get_total($input_prev_user);
 
-		// Phần trăm tăng trưởng người dùng
-		$user_percent = ($prev_customers > 0) ? round((($new_customers - $prev_customers) / $prev_customers) * 100) : (($new_customers > 0) ? 100 : 0);
-		$this->data['user_percent'] = $user_percent;
+		// Giá trị đơn TB
+		$avg_order_value = ($successful_orders > 0) ? ($revenue / $successful_orders) : 0;
+		$this->data['avg_order_value'] = $avg_order_value;
 
-		// 6. Tổng lượt xem sản phẩm (Giữ nguyên do view count là cộng dồn, không có timestamp)
-		$total_views = 0;
-		$products = $this->product_model->get_list();
-		foreach ($products as $product) {
-			if (isset($product->view)) {
-				$total_views += $product->view;
+		// 2. Chart data
+		$chart_labels = [];
+		$chart_revenue = [];
+		$chart_orders = [];
+
+		if ($filter == 'this_month') {
+			// 4 weeks
+			for ($i = 1; $i <= 4; $i++) {
+				$chart_labels[] = "Tuần $i";
+				$w_start = date('Y-m-d 00:00:00', strtotime(date('Y-m-01') . " + " . ($i-1)*7 . " days"));
+				$w_end = ($i == 4) ? date('Y-m-t 23:59:59') : date('Y-m-d 23:59:59', strtotime($w_start . " + 6 days"));
+
+				$this->db->select_sum('amount', 'total_revenue');
+				$this->db->where('status >', 0);
+				$this->db->where("created >= '$w_start'");
+				$this->db->where("created <= '$w_end'");
+				$r_query = $this->db->get('transaction')->row();
+				$chart_revenue[] = $r_query ? (int)$r_query->total_revenue : 0;
+
+				$this->db->where("created >= '$w_start'");
+				$this->db->where("created <= '$w_end'");
+				$chart_orders[] = $this->transaction_model->get_total();
+			}
+		} else {
+			// Days
+			$diff = 0;
+			if ($start_date && $end_date) {
+				$d1 = new DateTime($start_date);
+				$d2 = new DateTime($end_date);
+				$diff = $d1->diff($d2)->days;
+			}
+			if ($diff > 31) $diff = 31; 
+			if ($diff == 0 && $filter == 'today') {
+				// today: just show today
+				$temp_start = date('Y-m-d');
+				$diff = 0;
+			} else if ($diff == 0) {
+				// default to 6 days ago (total 7 days) if not today but no end date logic (shouldn't happen)
+				$temp_start = date('Y-m-d', strtotime('-6 days'));
+				$diff = 6;
+			} else {
+				$temp_start = date('Y-m-d', strtotime($start_date));
+			}
+
+			$day_names = [
+				'Mon' => 'T2',
+				'Tue' => 'T3',
+				'Wed' => 'T4',
+				'Thu' => 'T5',
+				'Fri' => 'T6',
+				'Sat' => 'T7',
+				'Sun' => 'CN'
+			];
+
+			for ($i = 0; $i <= $diff; $i++) {
+				$d = date('Y-m-d', strtotime($temp_start . " + $i days"));
+				if ($filter == 'this_week') {
+					$chart_labels[] = $day_names[date('D', strtotime($d))];
+				} else {
+					$chart_labels[] = date('d/m', strtotime($d));
+				}
+				
+				$this->db->select_sum('amount', 'total_revenue');
+				$this->db->where('status >', 0);
+				$this->db->where("created >= '$d 00:00:00'");
+				$this->db->where("created <= '$d 23:59:59'");
+				$r_query = $this->db->get('transaction')->row();
+				$chart_revenue[] = $r_query ? (int)$r_query->total_revenue : 0;
+
+				$this->db->where("created >= '$d 00:00:00'");
+				$this->db->where("created <= '$d 23:59:59'");
+				$chart_orders[] = $this->transaction_model->get_total();
 			}
 		}
-		$this->data['total_views'] = $total_views;
-		$this->data['visitor_percent'] = $user_percent; // Lấy tạm theo user_percent vì không có lịch sử traffic local
 
-		// 7. 5 sản phẩm bán chạy nhất (7 ngày qua)
+		$this->data['chart_labels'] = $chart_labels;
+		$this->data['chart_revenue'] = $chart_revenue;
+		$this->data['chart_orders'] = $chart_orders;
+
+		// 3. Compare Period
+		$current_period_start = $start_date;
+		$current_period_end = $end_date;
+
+		$prev_period_start = '';
+		$prev_period_end = '';
+
+		$compare_label_current = 'Kỳ này';
+		$compare_label_prev = 'Kỳ trước';
+
+		switch ($filter) {
+			case 'today':
+				$prev_period_start = date('Y-m-d 00:00:00', strtotime('-1 day'));
+				$prev_period_end = date('Y-m-d 23:59:59', strtotime('-1 day'));
+				$compare_label_current = 'Hôm nay';
+				$compare_label_prev = 'Hôm qua';
+				break;
+			case '7_days':
+				$prev_period_start = date('Y-m-d 00:00:00', strtotime('-14 days'));
+				$prev_period_end = date('Y-m-d 23:59:59', strtotime('-8 days'));
+				$compare_label_current = '7 ngày qua';
+				$compare_label_prev = '7 ngày trước';
+				break;
+			case 'this_week':
+				$prev_period_start = date('Y-m-d 00:00:00', strtotime('monday last week'));
+				$prev_period_end = date('Y-m-d 23:59:59', strtotime('sunday last week'));
+				$compare_label_current = 'Tuần này';
+				$compare_label_prev = 'Tuần trước';
+				break;
+			case 'this_month':
+				$prev_period_start = date('Y-m-01 00:00:00', strtotime('first day of last month'));
+				$prev_period_end = date('Y-m-t 23:59:59', strtotime('last day of last month'));
+				$compare_label_current = 'Tháng này';
+				$compare_label_prev = 'Tháng trước';
+				break;
+
+			case 'custom':
+			default:
+				if ($start_date && $end_date) {
+					$d1 = new DateTime($start_date);
+					$d2 = new DateTime($end_date);
+					$diff = $d1->diff($d2)->days + 1;
+					$prev_period_start = date('Y-m-d 00:00:00', strtotime($start_date . " -$diff days"));
+					$prev_period_end = date('Y-m-d 23:59:59', strtotime($end_date . " -$diff days"));
+				}
+				$compare_label_current = 'Kỳ này';
+				$compare_label_prev = 'Kỳ trước';
+				break;
+		}
+
+		$this->db->select_sum('amount', 'total_revenue');
+		$this->db->where('status >', 0);
+		if ($current_period_start) $this->db->where("created >= '$current_period_start'");
+		if ($current_period_end) $this->db->where("created <= '$current_period_end'");
+		$r_query = $this->db->get('transaction')->row();
+		$this_period_revenue = $r_query ? $r_query->total_revenue : 0;
+
+		$this->db->select_sum('amount', 'total_revenue');
+		$this->db->where('status >', 0);
+		if ($prev_period_start) $this->db->where("created >= '$prev_period_start'");
+		if ($prev_period_end) $this->db->where("created <= '$prev_period_end'");
+		$r_query = $this->db->get('transaction')->row();
+		$last_period_revenue = $r_query ? $r_query->total_revenue : 0;
+
+		$growth = 0;
+		if ($last_period_revenue > 0) {
+			$growth = (($this_period_revenue - $last_period_revenue) / $last_period_revenue) * 100;
+		} else if ($this_period_revenue > 0) {
+			$growth = 100;
+		}
+
+		$this->data['this_month_revenue'] = $this_period_revenue;
+		$this->data['last_month_revenue'] = $last_period_revenue;
+		$this->data['growth'] = $growth;
+		$this->data['compare_label_current'] = $compare_label_current;
+		$this->data['compare_label_prev'] = $compare_label_prev;
+
+		// 4. Top products by revenue
+		$this->db->select('product.*, COALESCE(sales.sold_count, 0) as sold_count, COALESCE(sales.revenue, 0) as revenue');
+		$this->db->from('product');
+		$this->db->join('(SELECT `order`.product_id, SUM(`order`.qty) as sold_count, SUM(`order`.amount) as revenue FROM `order` JOIN transaction ON transaction.id = `order`.transaction_id WHERE transaction.created >= "' . $start_date . '" ' . ($end_date ? 'AND transaction.created <= "' . $end_date . '"' : '') . ' AND transaction.status > 0 GROUP BY `order`.product_id) as sales', 'product.id = sales.product_id', 'left');
+		$this->db->order_by('revenue', 'DESC');
+		$this->db->limit(5);
+		$best_revenue = $this->db->get()->result();
+		$this->data['best_revenue'] = $best_revenue;
+
+		// 5. Best selling
 		$this->db->select('product.*, COALESCE(sales.sold_count, 0) as sold_count');
 		$this->db->from('product');
-		$this->db->join('(SELECT product_id, SUM(qty) as sold_count FROM `order` JOIN transaction ON transaction.id = `order`.transaction_id WHERE transaction.created >= "' . $seven_days_ago . '" GROUP BY product_id) as sales', 'product.id = sales.product_id', 'left');
+		$this->db->join('(SELECT `order`.product_id, SUM(`order`.qty) as sold_count FROM `order` JOIN transaction ON transaction.id = `order`.transaction_id WHERE transaction.created >= "' . $start_date . '" ' . ($end_date ? 'AND transaction.created <= "' . $end_date . '"' : '') . ' AND transaction.status > 0 GROUP BY `order`.product_id) as sales', 'product.id = sales.product_id', 'left');
 		$this->db->order_by('sold_count', 'DESC');
 		$this->db->limit(5);
 		$best_selling = $this->db->get()->result();
 		$this->data['best_selling'] = $best_selling;
 
-		// 8. 5 sản phẩm bán ít nhất (7 ngày qua)
+		// 6. Worst selling
 		$this->db->select('product.*, COALESCE(sales.sold_count, 0) as sold_count');
 		$this->db->from('product');
-		$this->db->join('(SELECT product_id, SUM(qty) as sold_count FROM `order` JOIN transaction ON transaction.id = `order`.transaction_id WHERE transaction.created >= "' . $seven_days_ago . '" GROUP BY product_id) as sales', 'product.id = sales.product_id', 'left');
+		$this->db->join('(SELECT `order`.product_id, SUM(`order`.qty) as sold_count FROM `order` JOIN transaction ON transaction.id = `order`.transaction_id WHERE transaction.created >= "' . $start_date . '" ' . ($end_date ? 'AND transaction.created <= "' . $end_date . '"' : '') . ' AND transaction.status > 0 GROUP BY `order`.product_id) as sales', 'product.id = sales.product_id', 'left');
 		$this->db->order_by('sold_count', 'ASC');
 		$this->db->limit(5);
 		$worst_selling = $this->db->get()->result();
 		$this->data['worst_selling'] = $worst_selling;
 
-		// 9. 5 sản phẩm được đánh giá tốt nhất (7 ngày qua)
-		$this->db->select('product.*, COALESCE(rating.avg_rating, 0) as avg_rating, COALESCE(rating.rating_count, 0) as rating_count');
-		$this->db->from('product');
-		$this->db->join('(SELECT product_id, AVG(rate) as avg_rating, COUNT(id) as rating_count FROM comments WHERE rate IS NOT NULL AND created >= "' . $seven_days_ago . '" GROUP BY product_id) as rating', 'product.id = rating.product_id', 'inner');
-		$this->db->order_by('avg_rating', 'DESC');
-		$this->db->limit(5);
-		$best_rated = $this->db->get()->result();
-		$this->data['best_rated'] = $best_rated;
-
-		// 10. 5 sản phẩm được đánh giá kém nhất (7 ngày qua)
-		$this->db->select('product.*, COALESCE(rating.avg_rating, 0) as avg_rating, COALESCE(rating.rating_count, 0) as rating_count');
-		$this->db->from('product');
-		$this->db->join('(SELECT product_id, AVG(rate) as avg_rating, COUNT(id) as rating_count FROM comments WHERE rate IS NOT NULL AND created >= "' . $seven_days_ago . '" GROUP BY product_id) as rating', 'product.id = rating.product_id', 'inner');
-		$this->db->order_by('avg_rating', 'ASC');
-		$this->db->limit(5);
-		$worst_rated = $this->db->get()->result();
-		$this->data['worst_rated'] = $worst_rated;
-
-		// 11. 5 sản phẩm được cho vào giỏ hàng nhiều nhất (Không đổi nếu bảng cart không có created, hoặc đổi nếu có)
-		// Giả sử bảng cart không có created, ta dùng all-time.
-		$this->db->select('product.*, COUNT(cart.product_id) as cart_count');
-		$this->db->from('product');
-		$this->db->join('cart', 'product.id = cart.product_id', 'left');
-		$this->db->group_by('product.id');
-		$this->db->order_by('cart_count', 'DESC');
-		$this->db->limit(5);
-		$most_carted = $this->db->get()->result();
-		$this->data['most_carted'] = $most_carted;
-
-
-		$dataWeek = $this->get_local_traffic_stats();
-		$dataMonth = $this->get_local_month_stats();
-		$chartSeries = $this->get_local_chart_series();
-
-		$KEY_FILE_PATH = APPPATH . 'third_party/ga4-key.json';
-		$property_id = getenv('GA4_PROPERTY');
-		if (empty($property_id) || strtoupper(trim($property_id)) === 'YOUR_KEY') {
-			$property_id = '492315679';
-		}
-
-		try {
-			if (!file_exists(FCPATH . 'vendor/autoload.php')) {
-				throw new RuntimeException('Composer vendor chưa được cài đặt');
-			}
-			if (!file_exists($KEY_FILE_PATH) || !is_readable($KEY_FILE_PATH)) {
-				throw new RuntimeException('Missing or unreadable GA4 key file: ' . $KEY_FILE_PATH);
-			}
-
-			$client = new BetaAnalyticsDataClient([
-				'credentials' => $KEY_FILE_PATH
-			]);
-
-			// ===================== THỐNG KÊ 7 NGÀY QUA =====================
-			$responseWeek = $client->runReport([
-				'property' => 'properties/' . $property_id,
-				'dateRanges' => [
-					new DateRange(['start_date' => '7daysAgo', 'end_date' => 'today'])
-				],
-				'metrics' => [
-					new Metric(['name' => 'activeUsers']),
-					new Metric(['name' => 'sessions']),
-					new Metric(['name' => 'newUsers']),
-					new Metric(['name' => 'engagedSessions']),
-				]
-			]);
-
-			$gaWeek = array();
-			foreach ($responseWeek->getRows() as $row) {
-				foreach ($row->getMetricValues() as $i => $metric) {
-					$name = $responseWeek->getMetricHeaders()[$i]->getName();
-					$gaWeek[$name] = $metric->getValue();
-				}
-			}
-			if (!empty($gaWeek)) {
-				$dataWeek = $gaWeek;
-			}
-
-			// ===================== NGƯỜI DÙNG TRONG THÁNG HIỆN TẠI =====================
-			$startOfMonth = date('Y-m-01');
-			$today = date('Y-m-d');
-
-			$responseMonth = $client->runReport([
-				'property' => 'properties/' . $property_id,
-				'dateRanges' => [
-					new DateRange(['start_date' => $startOfMonth, 'end_date' => $today])
-				],
-				'metrics' => [
-					new Metric(['name' => 'totalUsers']),
-					new Metric(['name' => 'newUsers']), // 👈 Thêm dòng này
-				]
-			]);
-
-			$gaMonth = array();
-			foreach ($responseMonth->getRows() as $row) {
-				foreach ($row->getMetricValues() as $i => $metric) {
-					$name = $responseMonth->getMetricHeaders()[$i]->getName();
-					$gaMonth[$name] = $metric->getValue();
-				}
-			}
-			if (!empty($gaMonth)) {
-				$dataMonth = $gaMonth;
-			}
-		} catch (Throwable $e) {
-			log_message('error', 'GA4 dashboard error: ' . $e->getMessage());
-		}
-
-		$this->data['data'] = $dataWeek;
-		$this->data['dataMonth'] = $dataMonth;
-		$this->data['chartSeries'] = $chartSeries;
-
 		$this->data['temp'] = 'admin/home/index';
 		$this->load->view('admin/main', $this->data);
-	}
-
-	private function get_local_traffic_stats()
-	{
-		$from = date('Y-m-d 00:00:00', strtotime('-6 days'));
-
-		$newUsers = (int) $this->db
-			->where('created >=', $from)
-			->count_all_results('user');
-
-		$sessions = (int) $this->db
-			->where('created >=', $from)
-			->count_all_results('transaction');
-
-		$activeRow = $this->db
-			->select('COUNT(DISTINCT user_id) AS total', false)
-			->where('created >=', $from)
-			->get('transaction')
-			->row();
-		$activeUsers = $activeRow ? (int) $activeRow->total : 0;
-
-		$engagedSessions = (int) $this->db
-			->where('created >=', $from)
-			->where('status >', 0)
-			->count_all_results('transaction');
-
-		return array(
-			'activeUsers' => max($activeUsers, $newUsers),
-			'newUsers' => $newUsers,
-			'sessions' => $sessions,
-			'engagedSessions' => $engagedSessions,
-		);
-	}
-
-	private function get_local_month_stats()
-	{
-		$startOfMonth = date('Y-m-01 00:00:00');
-
-		$totalUsers = (int) $this->db
-			->where('created >=', $startOfMonth)
-			->count_all_results('user');
-
-		$newUsers = $totalUsers;
-
-		$orderUsers = $this->db
-			->select('COUNT(DISTINCT user_id) AS total', false)
-			->where('created >=', $startOfMonth)
-			->get('transaction')
-			->row();
-
-		if ($orderUsers && (int) $orderUsers->total > $totalUsers) {
-			$totalUsers = (int) $orderUsers->total;
-		}
-
-		return array(
-			'totalUsers' => $totalUsers,
-			'newUsers' => $newUsers,
-		);
-	}
-
-	private function get_local_chart_series()
-	{
-		$labels = array();
-		$dailyOrders = array();
-		$dailyNewUsers = array();
-
-		for ($i = 6; $i >= 0; $i--) {
-			$day = date('Y-m-d', strtotime("-{$i} days"));
-			$nextDay = date('Y-m-d', strtotime('-' . ($i - 1) . ' days'));
-			$labels[] = date('d/m', strtotime($day));
-
-			$dailyOrders[] = (int) $this->db
-				->where('created >=', $day . ' 00:00:00')
-				->where('created <', $nextDay . ' 00:00:00')
-				->count_all_results('transaction');
-
-			$dailyNewUsers[] = (int) $this->db
-				->where('created >=', $day . ' 00:00:00')
-				->where('created <', $nextDay . ' 00:00:00')
-				->count_all_results('user');
-		}
-
-		return array(
-			'labels' => $labels,
-			'dailyOrders' => $dailyOrders,
-			'dailyNewUsers' => $dailyNewUsers,
-		);
 	}
 }

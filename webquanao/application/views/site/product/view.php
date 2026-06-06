@@ -98,7 +98,7 @@
 				<div class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
 					<div class="text-center">
 						<a href="<?php echo base_url(); ?>upload/product/<?php echo $product->image_link; ?>" class="jqzoom" rel="gal1" title="triumph">
-							<img src="<?php echo base_url(); ?>upload/product/<?php echo $product->image_link; ?>" alt="" style="max-width:380px;max-height: 500px">
+							<img src="<?php echo base_url(); ?>upload/product/<?php echo $product->image_link; ?>" alt="" style="max-width: 100%; max-height: 500px;">
 						</a>
 						<div class="clearfix"></div>
 						<ul id="thumblist" style="margin-top: 20px;">
