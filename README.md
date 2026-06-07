@@ -1,0 +1,96 @@
+# Hệ Thống TMĐT - Backend API
+
+Dự án phát triển Backend cho hệ thống Thương Mại Điện Tử bán quần áo.
+**Ngôn ngữ/Framework:** PHP & CodeIgniter (CI)
+
+---
+
+## 🌳 Cấu Trúc Nhánh (Git Branching)
+
+Dự án áp dụng mô hình Git Flow cơ bản để làm việc nhóm:
+
+- `main`: Nhánh chứa code hoàn chỉnh, ổn định nhất (chỉ dùng để deploy lên Production). **Không code trực tiếp trên nhánh này.**
+- `develop`: Nhánh gộp code chính của cả team. Mọi tính năng sau khi hoàn thành sẽ được gộp (merge) vào đây.
+- `feature/<tên-chức-năng>`: Nhánh dùng để phát triển các tính năng riêng biệt. Mỗi thành viên sẽ tự tạo nhánh này từ nhánh `develop`.
+  - *Ví dụ:* `feature/user-auth`, `feature/product-catalog`, `feature/order-checkout`, `feature/logistics-system`.
+
+---
+
+## 📝 Quy Tắc Đặt Tên Commit
+
+Nên thống nhất một chuẩn viết commit ngắn gọn và rõ ràng. Khuyến nghị sử dụng **Conventional Commits**:
+
+Cú pháp: `<Loại commit>: <Mô tả ngắn gọn>`
+
+**Các loại commit phổ biến:**
+- `feat:` Thêm tính năng mới (Ví dụ: `feat: add login api`)
+- `fix:` Sửa lỗi (Ví dụ: `fix: resolve user session bug`)
+- `docs:` Cập nhật tài liệu (Ví dụ: `docs: update readme`)
+- `refactor:` Tối ưu/Sửa lại code mà không làm thay đổi logic (Ví dụ: `refactor: format controller code`)
+- `chore:` Các tác vụ linh tinh, cấu hình (Ví dụ: `chore: config database setup`)
+
+---
+
+## 🚀 Quy Trình Làm Việc Hàng Ngày (Workflow)
+
+Để tránh **conflict** khi có nhiều người cùng viết file, các thành viên cần tuân thủ nghiêm ngặt quy trình sau:
+
+### Bước 1: Trước khi bắt đầu code tính năng mới
+Luôn luôn lấy code mới nhất từ nhánh `develop` về máy trước khi làm việc:
+```bash
+git checkout develop
+git pull origin develop
+```
+
+Sau đó tạo hoặc chuyển sang nhánh feature của mình:
+```bash
+# Tạo nhánh mới và chuyển sang đó
+git checkout -b feature/ten-tinh-nang
+
+# Hoặc nếu nhánh đã có sẵn thì chỉ cần chuyển sang
+git checkout feature/ten-tinh-nang
+```
+
+### Bước 2: Quá trình code
+Người nào làm nhánh nào thì chỉ chịu trách nhiệm trên những file thuộc module đó của mình.
+```bash
+git add .
+git commit -m "feat: mô tả công việc vừa làm"
+```
+
+### Bước 3: Đẩy code và Gộp code (Merge vào develop)
+**Tuyệt đối không push thẳng lên `develop` mà chưa Pull code mới về.**
+
+Khi chức năng của bạn đã hoàn thiện và muốn gộp vào `develop`:
+
+**3.1. Chuyển về nhánh `develop` và cập nhật lại lần nữa (vì có thể ai đó vừa push lên):**
+```bash
+git checkout develop
+git pull origin develop
+```
+
+**3.2. Chuyển lại về nhánh tính năng của bạn và gộp code mới từ `develop` vào:**
+```bash
+git checkout feature/ten-tinh-nang
+git merge develop
+```
+*(Nếu có thông báo Conflict ở bước này, mở file bị conflict trên VS Code để xử lý, sau đó `git add .` và `git commit -m "fix: resolve conflicts"`)*
+
+**3.3. Khi nhánh tính năng đã an toàn và chạy tốt, tiến hành ghép lại vào `develop`:**
+```bash
+git checkout develop
+git merge feature/ten-tinh-nang
+```
+
+**3.4. Cuối cùng, đẩy code nhánh `develop` lên GitHub:**
+```bash
+git push origin develop
+```
+
+---
+
+## ⚠️ Những Lưu Ý Quan Trọng
+1. **Không bao giờ push trực tiếp lên `main`**.
+2. Khi gặp **Conflict**, không được tự ý xóa code của người khác. Hãy báo cho người viết đoạn code đó để cùng giải quyết.
+3. Không push các file cấu hình môi trường thực tế (vd: `.env` chứa mật khẩu thật) hoặc thư mục chứa thư viện không cần thiết (vd: `vendor`, `node_modules`).
+4. Trước khi merge vào `develop`, phải đảm bảo code trên nhánh của mình chạy được và KHÔNG gây lỗi (Test cẩn thận).
