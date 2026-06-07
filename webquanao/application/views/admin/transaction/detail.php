@@ -85,15 +85,21 @@
                     </table>
                     <?php if ($transaction->status == '0') { ?>
                         <a href="<?php echo admin_url('transaction/accept/' . $transaction->id); ?>" class="btn btn-success"> Xác nhận đơn hàng</a> 
+                        <a href="<?php echo admin_url('transaction/cancel/' . $transaction->id); ?>" class="btn btn-danger" onclick="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?');"> Hủy đơn hàng</a> 
                     <?php } ?>
                     
                     <?php if ($transaction->status == '1') { ?>
                         <a href="<?php echo admin_url('transaction/deliver/' . $transaction->id); ?>" class="btn btn-success"> Vận chuyển</a> 
                     <?php } ?>
                     
+                    <?php if ($transaction->status == '2') { ?>
+                        <a href="<?php echo admin_url('transaction/done/' . $transaction->id); ?>" class="btn btn-success" onclick="return confirm('Xác nhận khách hàng đã nhận được hàng và thanh toán thành công?');"> <i class="fa fa-check"></i> Hoàn thành</a> 
+                        <a href="<?php echo admin_url('transaction/cancel/' . $transaction->id); ?>" class="btn btn-danger" onclick="return confirm('Xác nhận giao hàng thất bại (hoàn hàng)?');"> <i class="fa fa-times"></i> Giao thất bại</a> 
+                    <?php } ?>
+                    
                     <?php if ($transaction->status == '4') { ?>
                         <div class="alert alert-danger">
-                            <strong>Đơn hàng đã hủy!</strong> Đơn hàng này đã bị hủy.
+                            <strong>Đơn hàng này đã bị hủy / Giao hàng thất bại!</strong>
                         </div>
                     <?php } ?>
                 </div>

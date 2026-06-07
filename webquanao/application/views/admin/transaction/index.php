@@ -72,6 +72,9 @@
                                             case '3':
                                                 echo "<p style='color:green'><i class='fa fa-check'></i> Hoàn thành</p>";
                                                 break;
+                                            case '4':
+                                                echo "<p style='color:red'><i class='fa fa-times'></i> Đã hủy / Giao thất bại</p>";
+                                                break;
                                             default:
                                                 echo "<p><i class='fa fa-question-circle'></i> Không xác định</p>";
                                                 break;

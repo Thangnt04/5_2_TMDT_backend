@@ -72,7 +72,9 @@ class User_coupon_model extends MY_Model
 	{
 		$query = $this->db->get_where('coupon', [
 			'code' => $gift_code,
-			'type_coupon' => 1
+			'status' => 1,
+			'start_date <=' => date('Y-m-d H:i:s'),
+			'end_date >=' => date('Y-m-d H:i:s')
 		]);
 
 		$coupon = $query->row(); // Trả về object hoặc null nếu không có

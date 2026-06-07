@@ -220,4 +220,14 @@ class Transaction extends MY_Controller {
 
 		redirect(admin_url('transaction'));
 	}
+
+	public function cancel()
+	{
+		$id = $this->uri->segment(4);
+		$data['status'] = '4';
+		$this->transaction_model->update($id, $data);
+		$this->session->set_flashdata('message_success', 'Đã hủy đơn đặt hàng thành công');
+
+		redirect(admin_url('transaction'));
+	}
 }

@@ -31,6 +31,12 @@ class Coupon_model extends MY_Model
         // Join bảng catalog để lấy tên ngành hàng
         $this->db->join('catalog', 'catalog.id = c.catalog_id', 'left');
 
+        // Lọc các voucher đang hoạt động, công khai và còn hạn
+        $this->db->where('c.status', 1);
+        $this->db->where('c.start_date <=', date('Y-m-d H:i:s'));
+        $this->db->where('c.end_date >=', date('Y-m-d H:i:s'));
+        $this->db->where('c.privilege', 1);
+
         if (!empty($where)) {
             $this->db->where($where);
         }
